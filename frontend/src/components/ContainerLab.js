@@ -2828,7 +2828,7 @@ const App = ({ user, parentSetMode }) => {
   const handleSshPortForwardingSubmit = async () => {
     try {
       setIsLoadingPorts(true);
-      const response = await fetch(`http://${selectedSshServer}:3001/api/ports/free?serverIp=${selectedSshServer}`);
+      const response = await fetch(`http://${selectedSshServer}:3001/api/ports/free?serverIp=${selectedSshServer}&username=${encodeURIComponent(user?.username || '')}`);
       const data = await response.json();
       
       if (data.success && data.freePorts.length > 0) {

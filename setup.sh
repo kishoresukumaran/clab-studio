@@ -171,8 +171,19 @@ echo ""
 # ============================================
 echo -e "${YELLOW}Setting up topology storage directory...${NC}"
 mkdir -p "$TOPOLOGY_PATH"
-chmod 777 "$TOPOLOGY_PATH"
-echo -e "${GREEN}Topology directory ready: $TOPOLOGY_PATH${NC}"
+
+# Ensure clab_admins group exists
+if ! getent group clab_admins &>/dev/null; then
+    groupadd clab_admins
+    echo -e "${GREEN}Created 'clab_admins' group.${NC}"
+fi
+
+# Set group ownership and setgid so all users in clab_admins can create/modify labs
+chgrp -R clab_admins "$TOPOLOGY_PATH"
+chmod 2775 "$TOPOLOGY_PATH"
+chmod -R g+rwX "$TOPOLOGY_PATH"
+find "$TOPOLOGY_PATH" -type d -exec chmod g+s {} \;
+echo -e "${GREEN}Topology directory ready: $TOPOLOGY_PATH (group: clab_admins, setgid enabled)${NC}"
 
 echo ""
 

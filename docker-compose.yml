@@ -87,6 +87,7 @@ services:
       - BACKEND_API_PORT=${BACKEND_API_PORT:-3001}
       - CONTAINERLAB_API_PORT=${CONTAINERLAB_API_PORT:-8080}
       - TOPOLOGY_PATH=${TOPOLOGY_PATH:-/home/clab_nfs_share/containerlab_topologies}
+      - SSH_PASSWORD=${SSH_PASSWORD:-ul678clab}
 
   # =============================================
   # FRONTEND SERVICE
