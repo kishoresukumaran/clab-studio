@@ -14,6 +14,8 @@ import React, { useState, useEffect } from 'react';
 import { Loader2, Server } from 'lucide-react';
 import LogModal from './LogModal';
 import SshModal from './SshModal';
+import TopologyModal from './topology/TopologyModal';
+import { parseContainerlabYaml } from './topology/topologyParser';
 
 const ClabServers = ({ user }) => {
   const [topologies, setTopologies] = useState({});
@@ -28,6 +30,9 @@ const ClabServers = ({ user }) => {
   const [selectedTopologyNodes, setSelectedTopologyNodes] = useState([]);
   const [serverMetrics, setServerMetrics] = useState({});
   const [authTokens, setAuthTokens] = useState({});
+  const [showTopologyModal, setShowTopologyModal] = useState(false);
+  const [topologyViewData, setTopologyViewData] = useState(null);
+  const [topologyViewName, setTopologyViewName] = useState('');
 
   /**
    * List of containerlab servers available in the environment.
@@ -999,6 +1004,31 @@ const ClabServers = ({ user }) => {
                             >
                               Save
                             </button>
+                            <button
+                              className="action-button topology-view-button"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  const res = await fetch(
+                                    `http://${serverIp}:3001/api/files/read?path=${encodeURIComponent(topology.labPath)}&serverIp=${encodeURIComponent(serverIp)}&username=${encodeURIComponent(user?.username || 'admin')}`
+                                  );
+                                  const data = await res.json();
+                                  if (!data.content) {
+                                    alert('Could not read topology file');
+                                    return;
+                                  }
+                                  const parsed = parseContainerlabYaml(data.content);
+                                  setTopologyViewData(parsed);
+                                  setTopologyViewName(topology.topology || parsed.name);
+                                  setShowTopologyModal(true);
+                                } catch (err) {
+                                  console.error('Error loading topology:', err);
+                                  alert(`Error loading topology: ${err.message}`);
+                                }
+                              }}
+                            >
+                              Topology
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -1082,6 +1112,12 @@ const ClabServers = ({ user }) => {
         onClose={() => setShowSshModal(false)}
         nodes={selectedTopologyNodes}
         serverIp={selectedServer}
+      />
+      <TopologyModal
+        isOpen={showTopologyModal}
+        onClose={() => setShowTopologyModal(false)}
+        topologyData={topologyViewData}
+        topologyName={topologyViewName}
       />
     </div>
   );
