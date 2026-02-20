@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { AUTH_API_URL } from '../utils/config';
-import { isAdmin } from '../utils/auth';
+import { AUTH_API_URL, BACKEND_API_URL } from '../utils/config';
+import { isAdmin, getCurrentUser } from '../utils/auth';
 import '../styles.css';
 
 const api = axios.create({
@@ -64,7 +64,25 @@ const UserManagement = () => {
         setSuccess('User updated successfully');
       } else {
         await api.post('/api/users', formData);
-        setSuccess('User created successfully');
+
+        // Also create the Linux system user on the server
+        try {
+          const currentUser = getCurrentUser();
+          const adminUsername = currentUser?.username || 'labadmin';
+          const systemUserResponse = await axios.post(`${BACKEND_API_URL}/api/system/createUser`, {
+            username: formData.username,
+            adminUsername: adminUsername
+          });
+          if (systemUserResponse.data.success) {
+            setSuccess('User created successfully (UI + server)');
+          } else {
+            setSuccess('User created in UI, but server user creation failed: ' + systemUserResponse.data.error);
+          }
+        } catch (systemErr) {
+          console.error('Error creating system user:', systemErr);
+          setSuccess('User created in UI, but server user creation failed: ' +
+            (systemErr.response?.data?.error || systemErr.message));
+        }
       }
       resetForm();
       setShowModal(false);
@@ -81,7 +99,26 @@ const UserManagement = () => {
     setSuccess('');
     try {
       await api.delete(`/api/users/${userId}`);
-      setSuccess(`User "${username}" deleted successfully`);
+
+      // Also delete the Linux system user from the server
+      try {
+        const currentUser = getCurrentUser();
+        const adminUsername = currentUser?.username || 'labadmin';
+        const systemUserResponse = await axios.post(`${BACKEND_API_URL}/api/system/deleteUser`, {
+          username: username,
+          adminUsername: adminUsername
+        });
+        if (systemUserResponse.data.success) {
+          setSuccess(`User "${username}" deleted successfully (UI + server)`);
+        } else {
+          setSuccess(`User "${username}" deleted from UI, but server user deletion failed: ` + systemUserResponse.data.error);
+        }
+      } catch (systemErr) {
+        console.error('Error deleting system user:', systemErr);
+        setSuccess(`User "${username}" deleted from UI, but server user deletion failed: ` +
+          (systemErr.response?.data?.error || systemErr.message));
+      }
+
       fetchUsers();
     } catch (err) {
       console.error('Error deleting user:', err);
