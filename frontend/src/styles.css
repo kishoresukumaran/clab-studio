@@ -1410,6 +1410,16 @@ button[onClick*="handleAddKind"] {
   background-color: #a7f3d0;
 }
 
+.topology-view-button {
+  background-color: #e0e7ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+
+.topology-view-button:hover {
+  background-color: #c7d2fe;
+}
+
 .topology-info-block > div {
   margin-bottom: 1rem; /* Adds spacing between rows */
 }
