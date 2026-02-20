@@ -244,7 +244,7 @@ const App = ({ user, parentSetMode }) => {
   const [targetInterface, setTargetInterface] = useState("");
   const [showWarning, setShowWarning] = useState(false);
   const [nodeKind, setNodeKind] = useState("ceos");
-  const [nodeImage, setNodeImage] = useState("ceos:4.34.0F");
+  const [nodeImage, setNodeImage] = useState("arista_ceos:4.35.1F");
   const [nodeModalWarning, setNodeModalWarning] = useState(false);
   const [isModifying, setIsModifying] = useState(false);
   const [isModifyingEdge, setIsModifyingEdge] = useState(false);
@@ -388,15 +388,6 @@ const App = ({ user, parentSetMode }) => {
   /* This is the list of images that can be used for the nodes in the topology. This is displayed in the Image drop down in the Router details box. Right now it is hardcoded, any changes to the images will need to be made here. */
   const imageOptions = [
     { value: "arista_ceos:4.35.1F", label: "4.35.1F", kind: "ceos" },
-    { value: "ceos:4.34.0F", label: "4.34.0F", kind: "ceos" },
-    { value: "ceos:4.33.3F", label: "4.33.3F", kind: "ceos" },
-    { value: "ceos:4.32.5.1M", label: "4.32.5.1M", kind: "ceos" },
-    { value: "ceos:4.32.2F", label: "4.32.2F", kind: "ceos" },
-    { value: "ceos:4.31.4M", label: "4.31.4M", kind: "ceos" },
-    { value: "ceos:4.31.2F", label: "4.31.2F", kind: "ceos" },
-    { value: "ceos:4.30.5M", label: "4.30.5M", kind: "ceos" },
-    { value: "ceos:4.29.6M", label: "4.29.6M", kind: "ceos" },
-    { value: "ceos:4.28.10M", label: "4.28.10M", kind: "ceos" },
     { value: "sonic-vm:202411", label: "sonic:202411", kind: "sonic-vm" },
     { value: "alpine", label: "Alpine", kind: "linux" }
   ];
@@ -595,7 +586,7 @@ const App = ({ user, parentSetMode }) => {
       if (type === 'router') {
         setNodeNamePrefix('ceos');
         setNodeKind('ceos');
-        setNodeImage('ceos:4.34.0F');
+        setNodeImage('arista_ceos:4.35.1F');
       } else if (type === 'server') {
         setNodeNamePrefix('host');
         setNodeKind('linux');
@@ -665,7 +656,7 @@ const App = ({ user, parentSetMode }) => {
       if (nodeType === 'router') {
         setNodeNamePrefix('ceos');
         setNodeKind('ceos');
-        setNodeImage('ceos:4.34.0F');
+        setNodeImage('arista_ceos:4.35.1F');
       } else if (nodeType === 'bridge') {
         setNodeNamePrefix('bridge');
         setNodeKind('linux');
@@ -728,7 +719,7 @@ const App = ({ user, parentSetMode }) => {
     setGenerateBindsErrors([]);
     setSelectedDevicesForBinds({ superSpines: [], spines: [], leafs: [], hosts: [] });
     const ceosOptions = imageOptions.filter(option => option.kind === 'ceos');
-    setGenerateEosVersion(ceosOptions[0] ? ceosOptions[0].value : 'ceos:4.34.0F');
+    setGenerateEosVersion(ceosOptions[0] ? ceosOptions[0].value : 'arista_ceos:4.35.1F');
     setIsGenerateModalOpen(true);
   }, [imageOptions]);
 
@@ -1704,7 +1695,7 @@ const App = ({ user, parentSetMode }) => {
     setNodeName("");
     setNodeNamePrefix("");
     setNodeKind("ceos");
-    setNodeImage("ceos:4.34.0F");
+    setNodeImage("arista_ceos:4.35.1F");
     setNodeBinds([""]);
     setNodeMgmtIp("");
     setNodeIpv6MgmtIp("");
@@ -2106,86 +2097,62 @@ const App = ({ user, parentSetMode }) => {
         forceQuotes: true
       }) : yamlOutput;
 
-      // Step 1: Login to get the authentication token
-      setOperationLogs(prev => prev + '\nLogging in to containerlab API...\n');
-      
-      // Use relative URL to leverage the proxy setting in package.json
-      const loginResponse = await fetch(`/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          username: user?.username,
-          password: 'ul678clab'
-        })
-      });
-
-      if (!loginResponse.ok) {
-        throw new Error(`Login failed: ${loginResponse.status} ${loginResponse.statusText}`);
-      }
-
-      const loginData = await loginResponse.json();
-      const authToken = loginData.token;
-
-      setOperationLogs(prev => prev + 'Successfully logged in to containerlab API\n');
+      // Deploy using custom backend API
       setOperationLogs(prev => prev + '\nPreparing to deploy topology...\n');
 
-      // Step 2: Parse the YAML to a JSON object for the API
-      const topologyContentJson = yaml.load(finalYaml);
-      
-      // Start a progress indicator to show deployment is ongoing
-      setOperationLogs(prev => prev + '\nDeployment in progress. This might take a few minutes...\n');
-      
-      // Set up a progress indicator that updates every 5 seconds
-      const progressInterval = setInterval(() => {
-        setOperationLogs(prev => prev + '• Still working on deployment, please wait...\n');
-      }, 5000);
-      
+      // Create a file from the YAML content for upload
+      const formattedTopologyName = topologyName.includes(user?.username)
+        ? topologyName
+        : `${user?.username || ''}-${topologyName}`;
+      const fileName = `${formattedTopologyName}.yaml`;
+      const yamlBlob = new Blob([finalYaml], { type: 'application/x-yaml' });
+      const yamlFile = new File([yamlBlob], fileName, { type: 'application/x-yaml' });
+
+      // Create FormData for the file upload
+      const formData = new FormData();
+      formData.append('file', yamlFile);
+      formData.append('serverIp', serverIp);
+      formData.append('username', user?.username || '');
+
+      setOperationLogs(prev => prev + `Uploading topology file: ${fileName}\n`);
+      setOperationLogs(prev => prev + '\nDeployment in progress...\n');
+
       try {
-        // Step 3: Send the topology to the containerlab API using relative URL
-        const deployResponse = await fetch(`/api/v1/labs`, {
+        const deployResponse = await fetch(`http://${serverIp}:3001/api/containerlab/deploy`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({
-            topologyContent: topologyContentJson
-          })
+          body: formData
         });
-        
-        // Clear the progress indicator once we get a response
-        clearInterval(progressInterval);
-        
-        if (!deployResponse.ok) {
-          const errorText = await deployResponse.text();
-          throw new Error(`Deployment failed: ${deployResponse.status} - ${errorText}`);
+
+        // Read the streaming response
+        const reader = deployResponse.body.getReader();
+        const decoder = new TextDecoder();
+        let fullResponse = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          fullResponse += chunk;
+          setOperationLogs(prev => prev + chunk);
         }
-        
-        // Process the response here inside the try block
-        const contentType = deployResponse.headers.get('content-type');
-        let responseData;
-        
-        if (contentType && contentType.includes('application/json')) {
-          responseData = await deployResponse.json();
-          setOperationLogs(prev => prev + '\nDeployment completed successfully!\n');
-          setOperationLogs(prev => prev + JSON.stringify(responseData, null, 2));
+
+        // Check if the response indicates success
+        if (fullResponse.includes('Operation completed successfully')) {
+          setDeploymentSuccess(true);
         } else {
-          responseData = await deployResponse.text();
-          setOperationLogs(prev => prev + '\nDeployment completed successfully!\n');
-          setOperationLogs(prev => prev + responseData);
+          // Try to parse the final JSON result from the stream
+          const jsonMatch = fullResponse.match(/\{[^{}]*"success"\s*:\s*(true|false)[^{}]*\}/);
+          if (jsonMatch) {
+            const result = JSON.parse(jsonMatch[0]);
+            if (result.success) {
+              setDeploymentSuccess(true);
+            }
+          }
         }
-        
-        setDeploymentSuccess(true);
         return;
       } catch (error) {
-        // Make sure to clear the interval if there's an error
-        clearInterval(progressInterval);
         throw error;
-              }
+      }
     } catch (error) {
       console.error('Error deploying topology:', error);
       setOperationLogs(prev => prev + `\nError: ${error.message}`);
@@ -2509,7 +2476,7 @@ const App = ({ user, parentSetMode }) => {
     // Preserve the existing node's name and properties
     setNodeNamePrefix(nodeLabel.split('_')[0]); // Get the base name without any numbering
     setNodeKind(nodeToModify.data.kind || (isRouter ? 'ceos' : 'linux'));
-    setNodeImage(nodeToModify.data.image || (isRouter ? 'ceos:4.34.0F' : 'alpine'));
+    setNodeImage(nodeToModify.data.image || (isRouter ? 'arista_ceos:4.35.1F' : 'alpine'));
     setNodeCount(1);
     setNodeBinds(nodeToModify.data.binds || [""]);
     setNodeMgmtIp(nodeToModify.data.mgmtIp || "");
