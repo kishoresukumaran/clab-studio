@@ -49,11 +49,15 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 const sshConfig = {
-    username: 'student',
-    password: 'ul678clab',
+    password: config.sshPassword,
     tryKeyboard: true,
     readyTimeout: 5000
 };
+
+const getSshConfig = (username) => ({
+    ...sshConfig,
+    username: username
+});
 
 const resolvePath = (relativePath, basePath = '/opt') => {
     if (relativePath.startsWith('/')) {
@@ -132,11 +136,11 @@ app.post('/api/containerlab/deploy', upload.single('file'), async (req, res) => 
         res.setHeader('Connection', 'keep-alive');
 
         const ssh = new NodeSSH();
-        
+
         try {
-            res.write('Connecting to server...\n');
+            res.write(`Connecting to server as ${username}...\n`);
             await ssh.connect({
-                ...sshConfig,
+                ...getSshConfig(username),
                 host: serverIp
             });
             res.write('Connected successfully\n');
@@ -236,11 +240,11 @@ app.post('/api/containerlab/destroy', async (req, res) => {
         res.setHeader('Connection', 'keep-alive');
 
         const ssh = new NodeSSH();
-        
+
         try {
-            res.write('Connecting to server...\n');
+            res.write(`Connecting to server as ${username}...\n`);
             await ssh.connect({
-                ...sshConfig,
+                ...getSshConfig(username),
                 host: serverIp
             });
             res.write('Connected successfully\n');
@@ -315,11 +319,11 @@ app.post('/api/containerlab/reconfigure', upload.single('file'), async (req, res
         res.setHeader('Connection', 'keep-alive');
 
         const ssh = new NodeSSH();
-        
+
         try {
-            res.write('Connecting to server...\n');
+            res.write(`Connecting to server as ${username}...\n`);
             await ssh.connect({
-                ...sshConfig,
+                ...getSshConfig(username),
                 host: serverIp
             });
             res.write('Connected successfully\n');
@@ -415,11 +419,11 @@ app.post('/api/containerlab/save', async (req, res) => {
         res.setHeader('Connection', 'keep-alive');
 
         const ssh = new NodeSSH();
-        
+
         try {
-            res.write('Connecting to server...\n');
+            res.write(`Connecting to server as ${username}...\n`);
             await ssh.connect({
-                ...sshConfig,
+                ...getSshConfig(username),
                 host: serverIp
             });
             res.write('Connected successfully\n');
@@ -477,20 +481,27 @@ app.post('/api/containerlab/save', async (req, res) => {
 
 app.get('/api/ports/free', async (req, res) => {
     try {
-        const { serverIp } = req.query;
-        
+        const { serverIp, username } = req.query;
+
         if (!serverIp || !/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(serverIp)) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                error: 'Valid IPv4 address required' 
+                error: 'Valid IPv4 address required'
+            });
+        }
+
+        if (!username) {
+            return res.status(400).json({
+                success: false,
+                error: 'Username is required'
             });
         }
 
         const ssh = new NodeSSH();
-        
+
         try {
             await ssh.connect({
-                ...sshConfig,
+                ...getSshConfig(username),
                 host: serverIp
             });
 
@@ -555,12 +566,11 @@ app.get('/api/files/list', async (req, res) => {
     console.log(`Listing directory for user: ${username}`);
 
     const ssh = new NodeSSH();
-    
-    // Connect with the service account credentials
-    console.log(`Connecting as service user: ${sshConfig.username}`);
+
+    console.log(`Connecting as user: ${username}`);
     await ssh.connect({
       host: serverIp,
-      ...sshConfig
+      ...getSshConfig(username)
     });
 
     const { stdout } = await ssh.execCommand(`ls -la ${path}`, { cwd: '/' });
@@ -602,12 +612,11 @@ app.get('/api/files/read', async (req, res) => {
     console.log(`Reading file for user: ${username}`);
 
     const ssh = new NodeSSH();
-    
-    // Connect with the service account credentials
-    console.log(`Connecting as service user: ${sshConfig.username}`);
+
+    console.log(`Connecting as user: ${username}`);
     await ssh.connect({
       host: serverIp,
-      ...sshConfig
+      ...getSshConfig(username)
     });
 
     const { stdout } = await ssh.execCommand(`cat ${path}`, { cwd: '/' });
@@ -636,14 +645,13 @@ app.post('/api/files/save', upload.single('file'), async (req, res) => {
   try {
     console.log(`Saving file for user: ${username}`);
     console.log(`Target path: ${path}`);
-    
+
     const ssh = new NodeSSH();
-    
-    // Connect with the service account credentials
-    console.log(`Connecting as service user: ${sshConfig.username}`);
+
+    console.log(`Connecting as user: ${username}`);
     await ssh.connect({
       host: serverIp,
-      ...sshConfig
+      ...getSshConfig(username)
     });
   
     // Use the path provided by the user
@@ -685,21 +693,20 @@ app.post('/api/files/upload', upload.single('file'), async (req, res) => {
   
   try {
     console.log(`Uploading file for user: ${username}`);
-    
+
     if (!username) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Username is required' 
+      return res.status(400).json({
+        success: false,
+        error: 'Username is required'
       });
     }
-    
+
     const ssh = new NodeSSH();
-    
-    // Connect with the service account credentials
-    console.log(`Connecting as service user: ${sshConfig.username}`);
+
+    console.log(`Connecting as user: ${username}`);
     await ssh.connect({
       host: serverIp,
-      ...sshConfig
+      ...getSshConfig(username)
     });
     
     // Ensure target directory exists
@@ -742,21 +749,20 @@ app.delete('/api/files/delete', async (req, res) => {
   
   try {
     console.log(`Deleting ${isDirectory ? 'directory' : 'file'} for user: ${username}`);
-    
+
     if (!username) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Username is required' 
+      return res.status(400).json({
+        success: false,
+        error: 'Username is required'
       });
     }
-    
+
     const ssh = new NodeSSH();
-    
-    // Connect with the service account credentials
-    console.log(`Connecting as service user: ${sshConfig.username}`);
+
+    console.log(`Connecting as user: ${username}`);
     await ssh.connect({
       host: serverIp,
-      ...sshConfig
+      ...getSshConfig(username)
     });
     
     // Delete the file or directory
@@ -795,21 +801,20 @@ app.post('/api/files/createDirectory', async (req, res) => {
   
   try {
     console.log(`Creating directory for user: ${username}`);
-    
+
     if (!username) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Username is required' 
+      return res.status(400).json({
+        success: false,
+        error: 'Username is required'
       });
     }
-    
+
     const ssh = new NodeSSH();
-    
-    // Connect with the service account credentials
-    console.log(`Connecting as service user: ${sshConfig.username}`);
+
+    console.log(`Connecting as user: ${username}`);
     await ssh.connect({
       host: serverIp,
-      ...sshConfig
+      ...getSshConfig(username)
     });
     
     // Get user info to verify connection
@@ -854,21 +859,20 @@ app.post('/api/files/createFile', async (req, res) => {
   
   try {
     console.log(`Creating file for user: ${username}`);
-    
+
     if (!username) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Username is required' 
+      return res.status(400).json({
+        success: false,
+        error: 'Username is required'
       });
     }
-    
+
     const ssh = new NodeSSH();
-    
-    // Connect with the service account credentials
-    console.log(`Connecting as service user: ${sshConfig.username}`);
+
+    console.log(`Connecting as user: ${username}`);
     await ssh.connect({
       host: serverIp,
-      ...sshConfig
+      ...getSshConfig(username)
     });
     
     // Create the file
@@ -953,10 +957,9 @@ app.post('/api/files/copyPaste', async (req, res) => {
 
         const ssh = new NodeSSH();
         try {
-            // Connect to the source server (assuming it's the same as the destination server for simplicity)
             await ssh.connect({
-                ...sshConfig,
-                host: sourceServerIp // Connect to source server
+                ...getSshConfig(username),
+                host: sourceServerIp
             });
         } catch (error) {
             return res.status(500).json({ error: `Failed to connect to server: ${error.message}` });
@@ -1004,7 +1007,7 @@ app.post('/api/files/rename', async (req, res) => {
     try {
         const ssh = new NodeSSH();
         await ssh.connect({
-            ...sshConfig,
+            ...getSshConfig(username),
             host: serverIp
         });
 
@@ -1062,10 +1065,9 @@ app.post('/api/git/clone', async (req, res) => {
     const ssh = new NodeSSH();
     
     try {
-      // Update the SSH connection to match other parts of the file
-      log('Connecting to server...');
+      log(`Connecting to server as ${username}...`);
       await ssh.connect({
-        ...sshConfig,
+        ...getSshConfig(username),
         host: serverIp,
         readyTimeout: 10000
       });
