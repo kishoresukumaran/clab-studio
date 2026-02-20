@@ -1,0 +1,3311 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+/* .app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+} */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+h1 {
+  text-align: center;
+  background-color: #072452;
+  color: white;
+  margin: 0;
+  padding: 15px 0;
+}
+
+.dndflow {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.node-panel {
+  width: 220px; /* Fixed width instead of percentage for better control */
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-right: 1px solid #ccc;
+  overflow-y: auto;
+  min-width: 200px; /* Reduced min-width */
+}
+
+.node-panel div {
+  margin-bottom: 10px;
+}
+
+.node-panel label {
+  display: block;
+  margin-bottom: 5px;
+  color: #072452;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.node-panel input {
+  width: 100%;
+  padding: 5px;
+  box-sizing: border-box;
+}
+
+.node-panel-act {
+  width: 220px; /* Fixed width to match main node-panel */
+  /* padding: 10px; */
+  background-color: #f9f9f9;
+  display: flex;
+  flex-direction: column;
+  height: 10%;
+  overflow-y: auto;
+  min-width: 200px; /* Reduced min-width to match main node-panel */
+}
+
+.node-panel-act div {
+  margin-bottom: 10px;
+}
+
+.node-panel-act label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.node-panel-act input {
+  width: 100%;
+  padding: 5px;
+  box-sizing: border-box;
+}
+
+.node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 10px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  cursor: grab;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  text-align: center;
+  min-width: 60px;
+}
+
+.node:hover {
+  background-color: #e0e0e0;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.cytoscape-wrapper {
+  flex: 1 1 0%;
+  min-width: 0;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.cytoscape-container {
+  width: 100%;
+  height: 100%;
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.yaml-output {
+  width: 100%; /* Take full width of parent container */
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-left: 1px solid #ccc;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+textarea {
+  width: 100%;
+  height: 100%;
+  border: none;
+  resize: none;
+  background-color: #f9f9f9;
+  flex-grow: 1;
+}
+
+button {
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+.download-button {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  z-index: 10;
+}
+
+.download-button-act {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.yaml-header-act {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.download-button-act:hover {
+  background-color: #45a049;
+}
+
+.download-button-act:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 0;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  width: 400px;
+  max-width: 900px;
+  max-height: 80vh;
+  box-sizing: border-box;
+  margin: 0 20px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-content .form-content {
+  overflow-y: auto;
+  max-height: calc(80vh - 120px);
+  padding-right: 10px;
+  margin-bottom: 20px;
+}
+
+.modal-content .actions {
+  position: sticky;
+  bottom: 0;
+  background-color: white;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+  margin-top: auto;
+}
+
+.modal-content .form-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-content .form-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.modal-content .form-content::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.modal-content .form-content::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.modal-content h2 {
+  margin: 0 0 20px 0;
+  text-align: center;
+}
+
+.modal-content label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.modal-content input {
+  padding: 8px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.modal-content .input-group {
+  margin-bottom: 15px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.modal-content .input-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.modal-content .input-group input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.modal-content .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal-content button {
+  margin: 5px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background-color: #072452;
+  color: white;
+  cursor: pointer;
+}
+
+.modal-content button:hover {
+  background-color: #0056b3;
+}
+
+/* Custom node styles removed - Cytoscape handles node rendering via styles */
+
+.kind-section {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #f0f0f0;
+}
+
+.context-menu {
+  position: fixed;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  padding: 4px 0;
+  min-width: 160px;
+  z-index: 1200;
+}
+
+.context-menu button {
+  display: block;
+  width: 100%;
+  padding: 10px 20px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  color: #333;
+  font-size: 16px;
+}
+
+.context-menu button:hover {
+  background: #f5f5f5;
+}
+
+.context-menu button.delete-button {
+  color: #e74c3c;
+}
+
+.context-menu button.delete-button:hover {
+  background: #fef2f2;
+}
+
+.connect-mode-banner {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #e8f0fe;
+  border: 1px solid #4285f4;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  color: #333;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.connect-mode-banner button {
+  background: none;
+  border: 1px solid #999;
+  border-radius: 4px;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #555;
+}
+
+.connect-mode-banner button:hover {
+  background: #f0f0f0;
+}
+
+.kind-input-group,
+.default-input-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.kind-config-modal {
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.kind-config-modal .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.kind-config-modal button {
+  background-color: #072452;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.kind-config-modal button:hover {
+  background-color: #0a3270;
+}
+
+.kind-config-item {
+  margin: 15px 0;
+  padding: 0;
+}
+
+.kind-config-item label {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin: 0 0 10px 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.kind-config-item input[type="checkbox"] {
+  margin: 0;
+}
+
+.kind-config-item input[type="text"] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-top: 5px;
+}
+
+.exec-commands,
+.binds {
+  margin-top: 10px;
+}
+
+.exec-commands input,
+.binds input {
+  display: block;
+  width: 100%;
+  margin: 5px 0;
+}
+
+.kinds-section {
+  margin: 15px 0;
+}
+
+.kind-input-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.kind-input-group input {
+  flex: 1;
+}
+
+button.add-kind {
+  margin-top: 10px;
+  width: 100%;
+  padding: 8px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button.add-kind:hover {
+  background-color: #e0e0e0;
+}
+
+.input-group {
+  margin: 15px 0;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.input-group button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background-color: #072452;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.input-group button:hover {
+  background-color: #0056b3;
+}
+
+.input-group::-webkit-scrollbar {
+  width: 8px;
+}
+
+.input-group::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.input-group::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.input-group::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.binds-group {
+  margin-bottom: 20px;
+}
+
+.binds-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.binds-container input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.add-bind-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-bind-button:hover {
+  background-color: #218838;
+}
+
+.bind-input {
+  margin-bottom: 10px;
+}
+
+.bind-input input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.reset-button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 20px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.reset-button:hover {
+  background-color: #c82333;
+}
+
+/* Network node styles removed - Cytoscape handles node rendering via styles */
+
+.node-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.node-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+  margin-top: 4px;
+  color: #333;
+  line-height: 1.2;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 10px;
+  margin: 10px 0;
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+.checkbox-group input[type="checkbox"] {
+  margin: 0;
+}
+
+.checkbox-group label {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.checkbox-group-act {
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  min-width: 120px;
+}
+
+.checkbox-group-act label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.checkbox-group-act input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+.warning-modal .modal-content {
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  max-width: 300px;
+}
+
+.warning-modal h3 {
+  color: #856404;
+  margin-top: 0;
+}
+
+.warning-modal button {
+  background-color: #ffc107;
+  color: #000;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.warning-modal button:hover {
+  background-color: #e0a800;
+}
+
+.modal-content button,
+.yaml-output button,
+.download-button,
+button.add-kind {
+  background-color: #072452;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.modal-content button:hover,
+.yaml-output button:hover,
+.download-button:hover,
+button.add-kind:hover {
+  background-color: #0a3270;
+}
+
+/* Keep reset button styling */
+.reset-button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 20px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.reset-button:hover {
+  background-color: #c82333;
+}
+
+/* Configure and Add more kinds buttons */
+.kind-config-item button,
+button.configure-kind {
+  background-color: #072452;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin: 5px;
+}
+
+.kind-config-item button:hover,
+button.configure-kind:hover {
+  background-color: #0a3270;
+}
+
+/* Kind configuration buttons */
+.kind-input-group button,
+.kinds-section button {
+  background-color: #072452;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 5px;
+  transition: background-color 0.2s;
+}
+
+.kind-input-group button:hover,
+.kinds-section button:hover {
+  background-color: #0a3270;
+}
+
+/* Add specific style for Configure button */
+button[onClick*="handleConfigureKind"],
+button[onClick*="handleAddKind"] {
+  background-color: #072452;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 5px;
+  transition: background-color 0.2s;
+}
+
+.warning-message {
+  color: #dc3545;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.input-error {
+  border-color: #dc3545 !important;
+}
+
+.settings-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 0 15px 0;
+  color: #072452;
+  font-size: 16px;
+  font-weight: bold;
+  /* border-bottom: 1px solid #ccc; */
+  padding-bottom: 8px;
+}
+
+.kind-modal {
+  max-width: 500px;
+  padding: 20px;
+}
+
+.kind-config-item {
+  margin-bottom: 20px;
+}
+
+.kind-config-item label {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 0;
+  font-weight: normal;
+}
+
+.kind-config-item input[type="checkbox"] {
+  margin: 0;
+}
+
+.kind-config-item input[type="text"] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-top: 8px;
+  box-sizing: border-box;
+}
+
+.exec-commands,
+.binds {
+  margin-top: 10px;
+  margin-left: 20px;
+}
+
+.exec-commands input,
+.binds input {
+  margin-bottom: 8px;
+  width: calc(100% - 20px);
+}
+
+.kind-modal button {
+  background-color: #072452;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 15px;
+  float: right;
+}
+
+.kind-modal button:hover {
+  background-color: #0a3270;
+}
+
+.info-icon {
+  cursor: help;
+  color: #072452;
+  font-size: 14px;
+  position: relative;
+  display: inline-block;
+}
+
+.info-icon:hover::after {
+  content: "Define general settings for the nodes";
+  position: absolute;
+  left: 110%;
+  right: 0;
+  top: 0%;
+  transform: none;
+  background: #333;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  width: 180px;
+  white-space: normal;
+  word-wrap: break-word;
+  z-index: 1000;
+  margin-top: 5px;
+  line-height: 1.4;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* .header {
+  display: flex;
+  align-items: center;
+  background-color: #072452;
+  padding: 15px;
+  position: relative;
+} */
+
+/* Header container */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1px 10px;
+  background-color: #072452;
+  min-height: 64px;
+}
+
+/* Navigation buttons container */
+.header-buttons {
+  display: flex;
+  gap: 8px; /* Add spacing between buttons */
+}
+
+/* .header-buttons {
+  position: absolute;
+  left: 15px;
+  display: flex;
+  gap: 10px;
+} */
+
+/* .header h1 {
+  flex: 1;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+} */
+
+/* Title in the header */
+.header h1 {
+  flex: 1; /* Allow title to take available space */
+  text-align: center; /* Center text horizontally */
+  color: white; /* Make title text white for better contrast */
+  font-size: 25px; /* Increase font size */
+  margin: 0; /* Remove any default margins */
+}
+
+
+/* .header-button {
+  background-color: white;
+  color: #072452;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+} */
+
+/* Individual navigation buttons */
+.header-button {
+  background: #f3f4f6;
+  color: #1f2937;
+  border: none;
+  border-radius: 999px;
+  padding: 0.5rem 1.5rem;
+  margin-right: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.header-button.active {
+  background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(37,99,235,0.15);
+}
+
+.header-button:hover:not(.active) {
+  background: #e0e7ef;
+  color: #2563eb;
+}
+
+/* User info container */
+.user-info {
+  display: flex;
+  align-items: center; /* Align text and button vertically */
+  gap: 10px; /* Add spacing between "Welcome" text and logout button */
+}
+
+/* Logout button styling */
+.user-info button {
+  background: none;
+  color: #ef4444;
+  border: 2px solid #ef4444;
+  border-radius: 999px;
+  padding: 0.4rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.user-info button:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+.user-name {
+  color: white;
+}
+
+.act-divider {
+  border: none;
+  border-top: 1px solid #ccc;
+  margin: 20px 0;
+  width: 100%;
+}
+
+.act-section {
+  margin-top: 20px;
+}
+
+.input-section-act {
+  margin-left: 20px;
+  margin-bottom: 15px;
+}
+
+.input-group-act {
+  margin: 10px 0;
+}
+
+.input-group-act label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.input-group-act input {
+  width: calc(100% - 20px);
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.toggle-group-act {
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.toggle-switch-act {
+  position: relative;
+  display: inline-block;
+  width: 50px;  /* Reduced width */
+  height: 28px;
+}
+
+.toggle-switch-act input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-switch-act label {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  border-radius: 34px;
+  transition: .4s;
+  display: flex;
+  align-items: center;
+}
+
+.toggle-switch-act label:before {
+  position: absolute;
+  content: "";
+  height: 24px;  /* Slightly larger ball */
+  width: 24px;
+  left: 2px;    /* Reduced left margin */
+  background-color: white;
+  border-radius: 50%;
+  transition: .4s;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.toggle-switch-act input:checked + label {
+  background-color: #2196F3;
+}
+
+.toggle-switch-act input:checked + label:before {
+  transform: translate(22px, -50%);  /* Adjusted translation */
+}
+
+.toggle-label-act {
+  position: absolute;
+  right: -40px;
+  font-size: 14px;
+}
+
+.reset-button-act {
+  width: calc(100% - 20px);
+  padding: 10px;
+  margin: 20px 10px;
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.reset-button-act:hover {
+  background-color: #cc0000;
+}
+
+.input-error-act {
+  border-color: #ff4444 !important;
+}
+
+.warning-message-act {
+  color: #ff4444;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.modal-act {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content-act {
+  background-color: white;
+  padding: 20px;
+  border-radius: 4px;
+  width: 400px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Server Table Styles */
+.server-table {
+  width: 100% !important;
+  max-width: 98.4% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  box-sizing: border-box !important;
+  margin: 1rem !important;
+}
+
+.server-table th {
+  background-color: #f3f4f6;  /* gray-100 */
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+  font-weight: 600;
+}
+
+.server-table td {
+  padding: 0.75rem 1rem;
+  border: 1px solid #e5e7eb;
+}
+
+.server-table tr:hover {
+  background-color: #f9fafb;  /* gray-50 */
+}
+
+.server-table .status-active {
+  background-color: #d1fae5;  /* green-100 */
+  color: #065f46;  /* green-800 */
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+}
+
+.server-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;  /* provides consistent spacing */
+}
+
+.server-icon {
+  height: 20px;
+  width: 20px;
+  color: #3b82f6;  /* blue-500 */
+}
+
+.server-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.server-header {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+  margin: 2rem 1rem;
+}
+
+.server-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;  /* gray-800 */
+  margin-bottom: 1.5rem;
+}
+
+/* Topology Section Styles */
+.topology-section {
+  margin-top: 2rem;
+  border: 1px solid #e5e7eb;
+  margin-left: 1rem;
+  margin-right: 1rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.topology-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: #f3f4f6;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  margin: 0 1rem 0.5rem 1rem;
+}
+
+.topology-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.topology-name {
+  font-weight: 600;
+  color: #374151;
+}
+
+.topology-owner {
+  font-weight: 600;
+  color: #374151;
+}
+
+.topology-path {
+  font-weight: 600;
+  color: #374151;
+}
+
+.topology-label {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.75rem;
+  background-color: #dbeafe;
+  border-radius: 9999px;
+  color: #1e40af;
+}
+
+.topology-actions {
+  display: flex;
+  gap: 0.5rem;
+  /* margin-left: 1rem; */
+}
+
+.expand-button {
+  padding: 0.5rem;
+  color: #6b7280;
+  transition: transform 0.2s;
+}
+
+.expand-button.expanded {
+  transform: rotate(180deg);
+}
+
+.topology-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  padding: 0rem 1rem;
+  background-color: white;
+}
+
+.topology-table th {
+  padding: 0.75rem 1.5rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: #6b7280;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.topology-table td {
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.topology-table tr:hover td {
+  background-color: #f9fafb;
+}
+
+.status-running {
+  background-color: #d1fae5;
+  color: #065f46;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+}
+
+.status-exited {
+  background-color: #fef3c7;
+  color: #92400e;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+}
+
+.topology-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  padding: 1rem 0;
+  margin-bottom: 0.5rem;
+  margin-left: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-right: 2rem
+}
+
+.topology-count {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4b5563;
+  padding: 0.25rem 0.75rem;
+  background-color: #f3f4f6;
+  border-radius: 0.375rem;
+}
+
+.topology-header-section {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.topology-count {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #4b5563;
+  padding: 0.5rem 1rem;
+  background-color: #f3f4f6;
+  border-radius: 0.375rem;
+  margin-top: 1rem;
+}
+
+.topology-stats {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.count-badge {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #4b5563;
+  padding: 0.25rem 0.75rem;
+  background-color: #f3f4f6;
+  border-radius: 0.375rem;
+}
+
+.topology-actions {
+  display: inline-flex;
+  gap: 1rem;
+  margin-left: 2rem;
+}
+
+.action-button {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reconfigure-button {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.reconfigure-button:hover {
+  background-color: #bfdbfe;
+}
+
+.destroy-button {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.destroy-button:hover {
+  background-color: #fecaca;
+}
+
+.save-button {
+  background-color: #d1fae5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.save-button:hover {
+  background-color: #a7f3d0;
+}
+
+.topology-info-block > div {
+  margin-bottom: 1rem; /* Adds spacing between rows */
+}
+
+.topology-lab-name {
+  line-height: 1.5;
+}
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.button-group button {
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+.button-group button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+  color: #666666;
+}
+
+.button-group .deploy-button {
+  background-color: #007a2b;
+  color: #ffffff;
+  border: 1px solid #bbf7d0;
+}
+
+.button-group .deploy-button:hover {
+  background-color: #bbf7d0;
+}
+
+.fetch-all-button,
+.fetch-my-button {
+  background-color: #3B82F6;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.fetch-all-button:hover,
+.fetch-my-button:hover {
+  background-color: #2563EB;
+}
+
+.fetch-all-button:active,
+.fetch-my-button:active {
+  background-color: #1D4ED8;
+}
+
+.fetch-all-button:disabled {
+  background-color: #93C5FD;
+  cursor: not-allowed;
+}
+
+/* Container styles */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #072452;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Form card styles */
+.login-form {
+  width: 360px;
+  padding: 32px;
+  border-radius: 12px;
+  background-color: white;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.login-form:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Login logo styles */
+.login-logo-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.login-logo {
+  width: 355px;
+  height: auto;
+}
+
+/* Heading styles */
+.login-form h2 {
+  text-align: center;
+  color: #072452;
+  font-size: 28px;
+  margin-bottom: 24px;
+  font-weight: 600;
+}
+
+/* Form group styles */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #555;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 15px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #4d90fe;
+  box-shadow: 0 0 0 3px rgba(77, 144, 254, 0.2);
+}
+
+/* Button styles */
+button[type="submit"] {
+  width: 100%;
+  background-color: #072452;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 10px;
+}
+
+button[type="submit"]:hover {
+  background-color: #3367d6;
+}
+
+button[type="submit"]:active {
+  background-color: #2a56c6;
+}
+
+/* Error message styles */
+.error {
+  color: #d93025;
+  font-size: 14px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background-color: rgba(217, 48, 37, 0.05);
+  border-radius: 4px;
+  border-left: 4px solid #d93025;
+}
+
+.image-select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: white;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 15px;
+}
+
+.image-select:focus {
+  outline: none;
+  border-color: #072452;
+  box-shadow: 0 0 0 2px rgba(7, 36, 82, 0.1);
+}
+
+.image-select option {
+  padding: 8px;
+  font-size: 14px;
+}
+
+/* LogModal Styles */
+.logModal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.logModal-container {
+  background-color: white;
+  border-radius: 0.5rem;
+  width: 75%;
+  max-width: 56rem;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.logModal-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f9fafb;
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+}
+
+.logModal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.logModal-close-button {
+  color: #6b7280;
+  transition: color 0.2s;
+}
+
+.logModal-close-button:hover {
+  color: #374151;
+}
+
+.logModal-close-button:focus {
+  outline: none;
+}
+
+.logModal-close-icon {
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.logModal-content {
+  padding: 1.5rem;
+  flex: 1;
+  overflow: auto;
+  background-color: #f9fafb;
+}
+
+.logModal-logs {
+  background-color: black;
+  color: #34d399;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875rem;
+  white-space: pre-wrap;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.logModal-footer {
+  padding: 1rem;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+}
+
+.logModal-close-btn {
+  width: 100%;
+  background-color: #6b7280;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.logModal-close-btn:hover {
+  background-color: #4b5563;
+}
+
+.log-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100; /* Higher than regular modal */
+}
+
+.log-modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 800px;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+  z-index: 1110; /* Higher than log-modal overlay */
+}
+
+/* SSH Modal Styles */
+.ssh-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.ssh-modal-content {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 1200px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.ssh-modal-content h2 {
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  color: #1a1a1a;
+}
+
+.ssh-modal-table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+}
+
+.ssh-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.ssh-modal-actions button {
+  padding: 0.5rem 1rem;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ssh-modal-actions button:hover {
+  background-color: #e5e7eb;
+}
+
+.servers-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 1rem 2rem 1rem 1rem;
+  width: calc(100% - 2rem);
+}
+
+.servers-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.fetch-all-button {
+  background-color: #3B82F6;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+  margin-right: 1rem;
+}
+
+.fetch-all-button:hover {
+  background-color: #2563EB;
+}
+
+.fetch-all-button:active {
+  background-color: #1D4ED8;
+}
+
+/* Add these to your existing CSS file */
+
+.node-count-input {
+  width: 70px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.helper-text {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* Reassign button styling */
+.reassign-button {
+  background-color: #007a2b;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.2s;
+}
+
+.reassign-button:hover {
+  background-color: #00982f;
+}
+
+/* Adjust the form's labels and inputs */
+.input-group {
+  margin-bottom: 15px;
+}
+
+.input-group label {
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+/* Add some visual separation between groups */
+.form-content {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+/* Add styles for disabled buttons in the server table */
+.server-table button:disabled {
+  background-color: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.7;
+  border: 1px solid #d1d5db;
+}
+
+.server-table button:disabled:hover {
+  background-color: #e5e7eb;
+}
+
+/* Style for deploy button with warning */
+.server-table button.deploy-warning {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #f87171;
+}
+
+.server-table button.deploy-warning:hover {
+  background-color: #fecaca;
+}
+
+/* Styling for the Browse button to match modal action buttons */
+.browse-button {
+  background-color: #072452;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.browse-button:hover {
+  background-color: #0a3270;
+}
+
+.file-manager-button {
+  width: 100%;
+  padding: 10px;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.file-manager-button:hover {
+  background-color: #1d4ed8;
+}
+
+/* YAML Actions Group in Sidebar */
+.yaml-actions-group {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #ddd;
+}
+
+.sidebar-action-button {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  background-color: #072452;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  font-size: 14px;
+}
+
+.sidebar-action-button:hover {
+  background-color: #0a3270;
+}
+
+.sidebar-action-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+  color: #666666;
+}
+
+.sidebar-action-button:disabled:hover {
+  background-color: #cccccc;
+}
+
+/* Special styling for deploy button in sidebar */
+.sidebar-action-button.deploy-button {
+  background-color: #16a34a;
+  color: white;
+}
+
+.sidebar-action-button.deploy-button:hover {
+  background-color: #15803d;
+}
+
+.sidebar-action-button.deploy-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+  color: #666666;
+}
+
+.sidebar-action-button.deploy-button:disabled:hover {
+  background-color: #cccccc;
+}
+
+.bind-input-group {
+  margin-bottom: 10px;
+}
+
+.bind-input-group input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-bottom: 5px;
+}
+
+.bind-input-group .browse-button {
+  background-color: #072452;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.bind-input-group .browse-button:hover {
+  background-color: #0a3270;
+}
+
+.bind-input-group .add-bind-button,
+.bind-input-group .remove-bind-button {
+  background-color: #072452;
+  color: white;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+
+.bind-input-group .add-bind-button:hover,
+.bind-input-group .remove-bind-button:hover {
+  background-color: #0a3270;
+}
+
+/* YAML Editor Styles */
+.yaml-output .editor-container {
+  background-color: #f9f9f9; /* Light background to match page */
+  color: #333; /* Dark default text color for light background */
+  border: 1px solid #303030;
+  border-radius: 4px;
+  overflow: auto;
+  flex-grow: 1; /* Allow the editor to take up remaining vertical space */
+  position: relative;
+}
+
+.yaml-output .editor-container .Editor__textarea,
+.yaml-output .editor-container .Editor__editor {
+  font-family: '"Fira code", "Fira Mono", Consolas, "DejaVu Sans Mono", Monaco, "Andale Mono", "Ubuntu Mono", monospace';
+  font-size: 12px;
+  padding: 10px 0 !important;
+  margin: 0 !important;
+  outline: none;
+  border: none;
+  background-color: transparent;
+  color: inherit;
+  caret-color: #cccccc;
+  line-height: 1.5;
+}
+
+/* Line numbering styles */
+.yaml-output .editor-container-with-lines {
+  background-color: #f9f9f9;
+  color: #333;
+  display: flex;
+  flex-direction: row;
+  position: relative;
+  flex-grow: 1;
+  width: 100%; /* Ensure it takes full width */
+}
+
+.yaml-output .line-numbers {
+  background-color: #f0f0f0;
+  border-right: 1px solid #ddd;
+  color: #666;
+  font-family: "Fira code", "Fira Mono", Consolas, "DejaVu Sans Mono", Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 10px 2px 10px 3px;
+  text-align: right;
+  user-select: none;
+  min-width: 18px;
+  white-space: nowrap;
+}
+
+.yaml-output .line-number {
+  height: 18px; /* Match line-height * font-size */
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.yaml-output .editor-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.yaml-output .editor-content .Editor__textarea,
+.yaml-output .editor-content .Editor__editor {
+  font-family: "Fira code", "Fira Mono", Consolas, "DejaVu Sans Mono", Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+  font-size: 12px;
+  padding: 10px 0 10px 12px !important;
+  margin: 0 !important;
+  outline: none;
+  border: none;
+  background-color: transparent;
+  color: inherit;
+  caret-color: #333;
+  line-height: 1.5;
+  resize: none;
+}
+
+/* PrismJS token styles - Override prism-tomorrow.css theme for better readability */
+/* High specificity selectors to ensure our colors take precedence */
+
+/* YAML Keys (property names) - Dark Maroon */
+.yaml-output .token.property,
+.yaml-output .token.tag,
+.yaml-output .token.attr-name,
+.yaml-output .token.key,
+.yaml-output-container .token.property,
+.yaml-output-container .token.tag,
+.yaml-output-container .token.attr-name,
+.yaml-output-container .token.key {
+  color: #8B0000 !important; /* Dark maroon for keys */
+  font-weight: 600 !important; /* Bold for keys */
+}
+
+/* YAML Values (strings, numbers, booleans) - Dark Blue */
+.yaml-output .token.string,
+.yaml-output .token.number,
+.yaml-output .token.boolean,
+.yaml-output .token.constant,
+.yaml-output .token.scalar,
+.yaml-output-container .token.string,
+.yaml-output-container .token.number,
+.yaml-output-container .token.boolean,
+.yaml-output-container .token.constant,
+.yaml-output-container .token.scalar {
+  color: #1565C0 !important; /* Dark blue for values */
+  font-weight: 500 !important;
+}
+
+/* Comments - Darker Green */
+.yaml-output .token.comment,
+.yaml-output-container .token.comment {
+  color: #2E7D32 !important; /* Dark green for comments */
+  font-weight: 500 !important;
+}
+
+/* Punctuation (colons, commas, brackets) - Dark Gray */
+.yaml-output .token.punctuation,
+.yaml-output .token.operator,
+.yaml-output-container .token.punctuation,
+.yaml-output-container .token.operator {
+  color: #424242 !important; /* Dark gray for punctuation */
+  font-weight: 500 !important;
+}
+
+/* Keywords - Darker Blue */
+.yaml-output .token.keyword,
+.yaml-output .token.atrule,
+.yaml-output-container .token.keyword,
+.yaml-output-container .token.atrule {
+  color: #0D47A1 !important; /* Darker blue for keywords */
+  font-weight: 600 !important;
+}
+
+/* Other tokens */
+.yaml-output .token.selector,
+.yaml-output .token.char,
+.yaml-output .token.builtin,
+.yaml-output .token.inserted,
+.yaml-output-container .token.selector,
+.yaml-output-container .token.char,
+.yaml-output-container .token.builtin,
+.yaml-output-container .token.inserted {
+  color: #1565C0 !important; /* Blue for other value-like tokens */
+  font-weight: 500 !important;
+}
+
+.yaml-output .token.function,
+.yaml-output-container .token.function {
+  color: #6A1B9A !important; /* Dark purple for functions */
+  font-weight: 500 !important;
+}
+
+.yaml-output .token.regex,
+.yaml-output .token.variable,
+.yaml-output-container .token.regex,
+.yaml-output-container .token.variable {
+  color: #C62828 !important; /* Dark red for variables */
+  font-weight: 500 !important;
+}
+
+.yaml-output .token.important,
+.yaml-output .token.bold,
+.yaml-output-container .token.important,
+.yaml-output-container .token.bold {
+  font-weight: bold !important;
+  color: #8B0000 !important;
+}
+
+.yaml-output .token.italic,
+.yaml-output-container .token.italic {
+  font-style: italic !important;
+}
+
+.yaml-output .token.deleted,
+.yaml-output-container .token.deleted {
+  color: #C62828 !important;
+  font-weight: 500 !important;
+}
+
+/* Ensure react-simple-code-editor tokens are also styled */
+.yaml-output [class*="token"],
+.yaml-output-container [class*="token"] {
+  font-weight: 500;
+}
+
+/* Additional fallback for any remaining unstyled tokens */
+.yaml-output span[class*="property"],
+.yaml-output span[class*="attr-name"],
+.yaml-output span[class*="tag"] {
+  color: #8B0000 !important;
+  font-weight: 600 !important;
+}
+
+.yaml-output span[class*="string"],
+.yaml-output span[class*="number"],
+.yaml-output span[class*="boolean"] {
+  color: #1565C0 !important;
+  font-weight: 500 !important;
+}
+
+/* Style for message when no topologies are deployed */
+.no-topology-message {
+  text-align: center;
+  padding: 20px; /* Add padding around the text */
+  margin: 10px 20px; /* Add margin on top/bottom and sides */
+  background-color: #f0f0f0; /* Light grey background */
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  color: #555; /* Darker text color */
+  font-style: italic;
+}
+
+.yaml-output .button-group {
+  display: flex;
+  gap: 10px; /* Adjust gap as needed */
+  margin-top: 15px;
+  justify-content: flex-end; /* Align buttons to the right */
+}
+
+.yaml-output .button-group button {
+  flex: 1; /* Allow buttons to grow and shrink */
+  padding: 8px 12px; /* Adjust padding for consistent height */
+  font-size: 14px; /* Reduce font size */
+  text-align: center; /* Center text */
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+/* Remove blue focus outline from modal input and select elements */
+.modal input:focus,
+.modal select:focus {
+  outline: none;
+}
+
+.header-logo {
+  height: 40px;
+  width: auto;
+  margin-right: 16px;
+  margin-left: 0px;
+  display: flex;
+  align-items: center;
+}
+
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.settings-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  padding: 5px 10px;
+  margin-right: 0;
+  cursor: pointer;
+  background-color: transparent;
+  color: #333;
+  transition: transform 0.2s ease;
+}
+
+.settings-button:hover {
+  transform: rotate(45deg);
+  background-color: transparent;
+}
+
+.help-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #2563eb;
+  color: #fff;
+  font-weight: bold;
+  text-decoration: none;
+  transition: all 0.2s;
+  font-size: 1.2rem;
+}
+
+.help-button:hover {
+  background-color: #1e40af;
+  color: #fff;
+}
+
+.help-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* Custom node/edge rendering handled by Cytoscape.js styles */
+
+.node-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 10px;
+}
+
+.node-icon {
+  width: 24px;
+  height: 24px;
+  transition: transform 0.2s ease;
+  color: #4a5568;
+}
+
+.node:hover .node-icon {
+  transform: scale(1.1);
+  color: #2d3748;
+}
+
+/* Centered modal overlay for create/rename dialogs */
+.centered-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(30, 41, 59, 0.5); /* semi-transparent dark */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.centered-modal-box {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  padding: 0;
+  position: relative;
+  max-width: 90vw;
+  min-width: 320px;
+  width: 400px;
+  max-height: 90vh;
+  overflow: auto;
+  z-index: 2001;
+  display: flex;
+  flex-direction: column;
+}
+
+.centered-modal-box .modal-header {
+  padding: 16px 24px 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.centered-modal-box .modal-content {
+  padding: 24px;
+}
+
+.centered-modal-box .modal-footer {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.centered-modal-box .close-button {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #888;
+  cursor: pointer;
+  margin-left: 8px;
+}
+.centered-modal-box .close-button:hover {
+  color: #333;
+}
+
+/* Server deployment modal specific styles */
+.modal .server-deployment-table {
+  width: 100%;
+  overflow-x: hidden;
+  margin-bottom: 20px;
+  border-radius: 6px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  box-sizing: border-box;
+}
+
+.modal .server-deployment-table table.server-table {
+  width: 100% !important;
+  max-width: 98% !important;
+  table-layout: fixed;
+  border-collapse: collapse;
+  box-sizing: border-box;
+}
+
+.modal .server-deployment-table thead th {
+  position: sticky;
+  top: 0;
+  background-color: #f8f9fa;
+  z-index: 1;
+  font-weight: 600;
+  border-bottom: 2px solid #dee2e6;
+  padding: 12px 8px;
+  white-space: normal; /* Allow text wrapping for headers */
+  vertical-align: middle;
+  line-height: 1.3;
+  height: auto;
+  min-height: 50px;
+}
+
+.modal .server-deployment-table th,
+.modal .server-deployment-table td {
+  padding: 8px 6px;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid #e9ecef;
+}
+
+.modal .server-deployment-table td {
+  white-space: nowrap;
+}
+
+/* Specific styling for the Auto Assign column */
+.modal .server-deployment-table th:nth-child(7) {
+  white-space: normal;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.server-deploy-modal-content {
+  width: 100% !important;
+  max-width: 1580px !important;
+  margin: 0 auto;
+  padding: 20px 10px;
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Style the modal heading */
+.server-deploy-modal-content h2 {
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 1.5rem;
+  color: #1e3a8a;
+}
+
+/* Responsive adjustments for server deployment modal */
+@media (max-width: 1200px) {
+  .modal .server-deployment-table th,
+  .modal .server-deployment-table td {
+    padding: 6px 4px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .server-deploy-modal-content {
+    width: 99% !important;
+    margin: 5px auto;
+    padding: 15px 10px;
+  }
+  
+  .modal .server-deployment-table th,
+  .modal .server-deployment-table td {
+    padding: 4px 3px;
+    font-size: 0.8rem;
+  }
+  
+  /* Adjust button size on smaller screens */
+  .modal .server-deployment-table button {
+    padding: 5px 8px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Add hover effect to table rows */
+.modal .server-deployment-table tbody tr:hover {
+  background-color: #f1f5f9;
+}
+
+/* Adjust column widths to be more compact */
+.modal .server-deployment-table th:nth-child(1),
+.modal .server-deployment-table td:nth-child(1) {
+  width: 9%;
+}
+
+.modal .server-deployment-table th:nth-child(2),
+.modal .server-deployment-table td:nth-child(2) {
+  width: 9%;
+}
+
+.modal .server-deployment-table th:nth-child(3),
+.modal .server-deployment-table td:nth-child(3),
+.modal .server-deployment-table th:nth-child(4),
+.modal .server-deployment-table td:nth-child(4) {
+  width: 7%;
+}
+
+.modal .server-deployment-table th:nth-child(5),
+.modal .server-deployment-table td:nth-child(5) {
+  width: 13%;
+}
+
+.modal .server-deployment-table th:nth-child(6),
+.modal .server-deployment-table td:nth-child(6) {
+  width: 7%;
+}
+
+.modal .server-deployment-table th:nth-child(7),
+.modal .server-deployment-table td:nth-child(7) {
+  width: 10%;
+  text-align: center;
+}
+
+.modal .server-deployment-table th:nth-child(8),
+.modal .server-deployment-table td:nth-child(8) {
+  width: 10%;
+  text-align: center;
+}
+
+/* Ensure buttons in the table are more compact */
+.modal .server-deployment-table button {
+  padding: 6px 10px !important;
+  font-size: 0.85rem !important;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+/* Make sure the server list container fits */
+.server-deploy-modal-content .server-list {
+  width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Edge labels now rendered by Cytoscape.js natively */
+
+/* Make sure labels don't get dragged with the canvas */
+.nodrag {
+  pointer-events: all !important;
+}
+
+.nopan {
+  pointer-events: all !important;
+}
+
+/* Server deployment buttons */
+.server-action-buttons {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  gap: 8px;
+}
+
+.server-action-btn {
+  padding: 6px 10px !important;
+  font-size: 0.85rem !important;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+/* File Manager Modal Specific Styles */
+.file-manager-modal-content {
+  width: 90% !important;
+  max-width: 1100px !important;
+  max-height: 80vh;
+  box-sizing: border-box;
+  margin: 0 20px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  padding: 20px;
+  background-color: white;
+  border-radius: 5px;
+}
+
+/* Annotation Toolbar Styles */
+.annotation-toolbar {
+  position: absolute;
+  bottom: 20px;
+  right: 10px;
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 6px;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  z-index: 2000;
+}
+
+.tool-group {
+  display: flex;
+  flex-direction: row;
+  gap: 3px;
+  position: relative;
+}
+
+.tool-button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: #f8f9fa;
+  color: #495057;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tool-button:hover {
+  background: #e9ecef;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tool-button.active {
+  background: #072452;
+  color: white;
+  box-shadow: 0 2px 8px rgba(7, 36, 82, 0.3);
+}
+
+.color-button {
+  border: 2px solid #dee2e6;
+  position: relative;
+}
+
+.color-button:hover {
+  border-color: #adb5bd;
+}
+
+.delete-button {
+  background: #dc3545;
+  color: white;
+}
+
+.delete-button:hover {
+  background: #c82333;
+}
+
+.style-button {
+  background: #6c757d;
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.style-button:hover {
+  background: #5a6268;
+}
+
+/* Dropdown Styles */
+.color-picker-dropdown,
+.text-options-dropdown,
+.shape-options-dropdown {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 8px;
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  min-width: 200px;
+  z-index: 2001;
+}
+
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+}
+
+.color-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  transition: transform 0.1s ease;
+}
+
+.color-swatch:hover {
+  transform: scale(1.1);
+}
+
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.option-row:last-child {
+  margin-bottom: 0;
+}
+
+.option-row label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #495057;
+  min-width: 60px;
+  margin: 0;
+}
+
+.option-row input[type="range"] {
+  flex: 1;
+  margin: 0;
+}
+
+.option-row span {
+  font-size: 11px;
+  color: #6c757d;
+  min-width: 30px;
+  text-align: right;
+}
+
+.style-toggle {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  background: #f8f9fa;
+  color: #495057;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.style-toggle:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.style-toggle.active {
+  background: #072452;
+  color: white;
+  border-color: #072452;
+}
+
+/* Annotation Selection Styles */
+.selected-annotation {
+  filter: drop-shadow(0 0 4px #072452) drop-shadow(0 0 8px rgba(7, 36, 82, 0.5));
+  stroke-dasharray: 5,5;
+  animation: dash 1s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+/* Annotation interaction improvements */
+.annotation-element {
+  transition: opacity 0.2s ease;
+}
+
+.annotation-element:hover {
+  opacity: 0.8;
+}
+
+.annotation-element.selected-annotation {
+  opacity: 1;
+}
+
+/* Improve cursor feedback */
+.cytoscape-wrapper[data-annotation-tool="rectangle"] {
+  cursor: crosshair;
+}
+
+.cytoscape-wrapper[data-annotation-tool="text"] {
+  cursor: text;
+}
+
+.cytoscape-wrapper[data-annotation-tool="circle"] {
+  cursor: crosshair;
+}
+
+.cytoscape-wrapper[data-annotation-tool="select"] {
+  cursor: default;
+}
+
+/* Annotation Layer */
+.annotation-layer {
+  pointer-events: none;
+  user-select: none;
+}
+
+.annotation-layer text,
+.annotation-layer rect,
+.annotation-layer circle,
+.annotation-layer line,
+.annotation-layer g {
+  pointer-events: all;
+}
+
+/* Responsive adjustments for annotation toolbar */
+@media (max-width: 768px) {
+  .annotation-toolbar {
+    bottom: 60px;
+    right: 10px;
+    flex-wrap: wrap;
+    max-width: calc(100vw - 20px);
+  }
+  
+  .tool-button {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .color-picker-dropdown,
+  .text-options-dropdown,
+  .shape-options-dropdown {
+    min-width: 180px;
+    right: 0;
+    left: auto;
+  }
+}
+
+/* YAML Editor Collapsible Container Styles with Smooth Animation */
+.yaml-output-container {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  width: 25%; /* Further reduced for more design space */
+  min-width: 320px; /* Reduced min-width for more flexibility */
+  max-width: 420px; /* Reduced max-width */
+  /* Enhanced transition for smooth animation */
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: #f9f9f9;
+  border-left: 1px solid #ccc;
+  overflow: visible; /* Allow toggle button to be visible outside container */
+}
+
+.yaml-output-container.collapsed {
+  width: 40px !important; /* Width when collapsed - just enough for the toggle button */
+  min-width: 40px !important; /* Override the min-width when collapsed */
+  max-width: 40px !important; /* Override the max-width when collapsed */
+}
+
+.yaml-toggle-button {
+  position: absolute;
+  left: -30px; /* Position outside the container */
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 15; /* Higher z-index to ensure visibility */
+  /* Ensure button stays visible during animation */
+  pointer-events: auto;
+  width: 30px;
+  height: 50px;
+  background-color: #072452;
+  color: white;
+  /* Smooth transition for button changes */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  border-radius: 8px 0 0 8px; /* Rounded on the left side like a tab */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease-in-out;
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.yaml-toggle-button:hover {
+  background-color: #0a3270;
+  width: 32px;
+  transform: translateY(-50%) translateX(-2px); /* Slight leftward movement on hover */
+  box-shadow: -3px 0 6px rgba(0, 0, 0, 0.15), 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+.yaml-toggle-button:active {
+  transform: translateY(-50%) translateX(-1px);
+}
+
+.yaml-output-container .yaml-output {
+  opacity: 1;
+  transform: translateX(0);
+  overflow: hidden; /* Hide content overflow during animation */
+  /* Enhanced transition for content */
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  /* No margin needed - button is now outside the container */
+}
+
+.yaml-output-container.collapsed .yaml-output {
+  opacity: 0;
+  transform: translateX(20px); /* Slide content slightly right when hiding */
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Responsive behavior with smooth animations maintained */
+@media (max-width: 1400px) {
+  .yaml-output-container {
+    width: 35%; /* Reduced from 40% */
+    min-width: 350px; /* Reduced from 400px */
+    max-width: 450px; /* Reduced from 550px */
+  }
+  
+  .yaml-output-container.collapsed {
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+  }
+}
+
+@media (max-width: 1200px) {
+  .yaml-output-container {
+    width: 350px; /* Reduced from 400px for medium screens */
+    min-width: unset;
+    max-width: unset;
+  }
+  
+  .yaml-output-container.collapsed {
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+  }
+}
+
+@media (max-width: 992px) {
+  .yaml-output-container {
+    width: 320px; /* Reduced from 350px for smaller screens */
+  }
+  
+  .yaml-output-container.collapsed {
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+  }
+  
+  .yaml-toggle-button {
+    width: 28px;
+    height: 45px;
+  }
+}
+
+@media (max-width: 768px) {
+  .yaml-output-container {
+    width: 100%;
+    position: fixed;
+    right: 0;
+    top: 0;
+    height: 100vh;
+    z-index: 1000;
+    transform: translateX(100%);
+    /* Enhanced transition for mobile sliding animation */
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .yaml-output-container.expanded {
+    transform: translateX(0);
+  }
+  
+  .yaml-output-container.collapsed {
+    width: 40px !important;
+    transform: translateX(calc(100% - 40px));
+  }
+  
+  .yaml-toggle-button {
+    left: -30px;
+    border-radius: 8px 0 0 8px;
+    box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Ensure the main layout adjusts when YAML editor is collapsed */
+.dndflow {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Adjust ReactFlow wrapper when YAML editor is collapsed */
+.dndflow .cytoscape-wrapper {
+  flex-grow: 1;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Enhanced visual feedback for the toggle button with smooth rotation */
+.yaml-toggle-button svg {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
+}
+
+.yaml-output-container.collapsed .yaml-toggle-button svg {
+  transform: rotate(180deg);
+}
+
+/* Smooth animation for content visibility */
+.yaml-output-container .yaml-output * {
+  transition: opacity 0.3s ease-in-out;
+}
+
+.yaml-output-container.collapsed .yaml-output * {
+  opacity: 0;
+}
+
+/* ========================= */
+/* User Management Page      */
+/* ========================= */
+
+.user-management-container {
+  padding: 20px 30px;
+  max-width: 100%;
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+.user-management-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding: 16px 24px;
+  background-color: #072452;
+  border-radius: 8px;
+  color: white;
+}
+
+.user-management-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+}
+
+.back-button {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.create-user-button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.create-user-button:hover {
+  background: #1d4ed8;
+}
+
+.user-management-loading {
+  text-align: center;
+  padding: 40px;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+.um-error {
+  color: #d93025;
+  font-size: 14px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background-color: rgba(217, 48, 37, 0.08);
+  border-radius: 6px;
+  border-left: 4px solid #d93025;
+}
+
+.um-success {
+  color: #065f46;
+  font-size: 14px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background-color: rgba(6, 95, 70, 0.08);
+  border-radius: 6px;
+  border-left: 4px solid #059669;
+}
+
+/* User Management Table */
+.user-management-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.user-management-table th {
+  background-color: #f3f4f6;
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.user-management-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.9rem;
+  color: #1f2937;
+}
+
+.user-management-table tr:hover {
+  background-color: #f9fafb;
+}
+
+.user-management-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Role badges */
+.role-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.role-admin {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.role-user {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+/* Action buttons in user table */
+.user-action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-button {
+  background-color: #072452;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.edit-button:hover {
+  background-color: #0a3270;
+}
+
+.delete-user-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.delete-user-button:hover {
+  background-color: #c82333;
+}
+
+/* User modal form styling */
+.user-modal-content {
+  width: 450px;
+}
+
+.user-modal-content h2 {
+  margin: 0 0 20px 0;
+  font-size: 1.3rem;
+  color: #1f2937;
+}
+
+.user-modal-content .form-group {
+  margin-bottom: 16px;
+}
+
+.user-modal-content .form-group label {
+  display: block;
+  margin-bottom: 6px;
+  color: #374151;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.user-modal-content .form-group input,
+.user-modal-content .form-group select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.user-modal-content .form-group input:focus,
+.user-modal-content .form-group select:focus {
+  outline: none;
+  border-color: #4d90fe;
+  box-shadow: 0 0 0 3px rgba(77, 144, 254, 0.2);
+}
+
+.role-select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+  background-color: white;
+  cursor: pointer;
+}
+
+.user-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.user-modal-actions .cancel-button {
+  background-color: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.user-modal-actions .cancel-button:hover {
+  background-color: #4b5563;
+}
+
+.user-modal-actions .submit-button {
+  background-color: #072452;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.user-modal-actions .submit-button:hover {
+  background-color: #0a3270;
+}

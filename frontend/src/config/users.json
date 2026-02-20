@@ -1,0 +1,16 @@
+{
+  "users": [
+    {
+      "username": "labadmin",
+      "password": "ul678clab",
+      "role": "admin",
+      "displayName": "admin"
+    },
+    {
+      "username": "kishore",
+      "password": "ul678clab",
+      "role": "user",
+      "displayName": "kishore"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+# Configuration with secrets (use .example instead)
+clab-config.env
+.env
+
+# Node modules (all services)
+**/node_modules/
+
+# Generated files
+frontend/.env
+frontend/nginx.conf
+
+# Build artifacts
+frontend/build/
+frontend/dist/
+
+# Backend runtime data
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Docker volumes
+mongodb_data/
+
+# Logs
+*.log
+logs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude session files
+claude.md
+claude-session-*.log
