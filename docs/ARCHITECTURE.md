@@ -26,6 +26,7 @@ Containerlab Studio is a web-based platform for designing, deploying, and managi
 |  |  React Application                                             | |
 |  |  +-> Topology Designer (ReactFlow)                             | |
 |  |  +-> Dashboard (Server Management)                             | |
+|  |  +-> Topology Viewer (Cytoscape.js)                            | |
 |  |  +-> Web Terminal (XTerm.js + WebSocket)                       | |
 |  |  +-> File Manager (SFTP via backend)                           | |
 |  |  +-> YAML Editor                                               | |
@@ -161,6 +162,24 @@ User clicks SSH button on a node
   -> XTerm.js renders terminal output in browser
 ```
 
+### Topology Viewer
+
+```
+User clicks "Topology" button on a deployed lab in Dashboard
+  -> Frontend GET http://<SERVER_IP>:3001/api/files/read
+     ?path=<labPath>&serverIp=<serverIp>&username=<username>
+  -> Backend SSHs to server, reads YAML file content
+  -> Returns YAML as string in response
+  -> Frontend parses YAML client-side (js-yaml)
+  -> Converts to Cytoscape.js format (nodes + edges)
+     - Nodes: id, label, kind, mgmt_ip, config, container_name
+     - Edges: source, target, source_interface, target_interface
+  -> Opens fullscreen TopologyModal
+  -> Cytoscape.js renders interactive graph (cose-bilkent layout)
+  -> Click nodes/edges to inspect details in info panel
+  -> Toolbar: Fit View, Reset Layout, Toggle Labels, Export PNG
+```
+
 ### File Management
 
 ```
@@ -214,6 +233,11 @@ clab-studio/
 |   |   +-- components/
 |   |   |   +-- ContainerLab.js  # Topology designer (main component)
 |   |   |   +-- ClabServers.js   # Dashboard with server list
+|   |   |   +-- topology/
+|   |   |   |   +-- TopologyModal.js    # Fullscreen Cytoscape.js viewer modal
+|   |   |   |   +-- TopologyModal.css   # Viewer styles
+|   |   |   |   +-- topologyParser.js   # YAML-to-Cytoscape parser
+|   |   |   |   +-- topologyStyles.js   # Cytoscape node/edge styles & layout
 |   |   |   +-- FileManagerModal.js
 |   |   |   +-- WebTerminal.js   # SSH terminal via WebSocket
 |   |   |   +-- Login.js
@@ -244,8 +268,7 @@ All configuration is centralized in `clab-config.env` at the repo root.
 | `CONTAINERLAB_API_PORT`| Containerlab API port                          | 8080                                           |
 | `FRONTEND_PORT`        | Frontend / Nginx port                          | 80                                             |
 | `CLAB_SERVERS`         | Comma-separated server list (name:ip)          | ul-clab-1:<SERVER_IP>                          |
-| `SSH_USERNAME`         | SSH user for backend operations                | student                                        |
-| `SSH_PASSWORD`         | SSH password                                   | (set in config)                                |
+| `SSH_PASSWORD`         | SSH password for backend operations            | (set in config)                                |
 | `TOPOLOGY_PATH`        | Topology file storage directory                | /home/clab_nfs_share/containerlab_topologies   |
 | `LAB_ADMIN_USER`       | Default admin username                         | labadmin                                       |
 | `LAB_ADMIN_PASSWORD`   | Default admin password                         | (set in config)                                |
