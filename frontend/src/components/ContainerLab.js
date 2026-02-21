@@ -287,6 +287,8 @@ const App = ({ user, parentSetMode }) => {
   const [showGlobalSettings, setShowGlobalSettings] = useState(false);
   const [showOptionalSettings, setShowOptionalSettings] = useState(false);
   const [selectedTopologyNodes, setSelectedTopologyNodes] = useState([]);
+  const [showGitDeployModal, setShowGitDeployModal] = useState(false);
+  const [gitRepoUrl, setGitRepoUrl] = useState('');
   const [serverMetrics, setServerMetrics] = useState({});
   const [nodeCustomFields, setNodeCustomFields] = useState([{ key: '', value: '' }]);
   const [modalType, setModalType] = useState("create");
@@ -2161,6 +2163,77 @@ const App = ({ user, parentSetMode }) => {
     }
   };
 
+  /* This is the function to handle deployment directly from a Git repository URL */
+  const handleGitDeploy = async () => {
+    if (!gitRepoUrl.trim()) {
+      alert('Please enter a valid Git repository URL');
+      return;
+    }
+
+    if (!user?.username) {
+      alert('User information not available. Please log in.');
+      return;
+    }
+
+    const repoName = gitRepoUrl.split('/').pop().replace('.git', '');
+    const serverIp = serverOptions[0].value;
+
+    // Close the Git modal and open the log modal
+    setShowGitDeployModal(false);
+    setOperationTitle(`Git Deployment: ${repoName}`);
+    setOperationLogs('Starting Git repository deployment...\n');
+    setShowLogModal(true);
+    setDeploymentSuccess(false);
+
+    try {
+      setOperationLogs(prev => prev + `Repository: ${gitRepoUrl}\n`);
+      setOperationLogs(prev => prev + `Server: ${serverIp}\n`);
+      setOperationLogs(prev => prev + `User: ${user.username}\n\n`);
+
+      const response = await fetch(`http://${serverIp}:3001/api/containerlab/deploy-git`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          gitRepoUrl: gitRepoUrl,
+          username: user.username
+        })
+      });
+
+      // Read the streaming response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullResponse = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        fullResponse += chunk;
+        setOperationLogs(prev => prev + chunk);
+      }
+
+      // Check if the response indicates success
+      if (fullResponse.includes('Operation completed successfully')) {
+        setDeploymentSuccess(true);
+      } else {
+        const jsonMatch = fullResponse.match(/\{[^{}]*"success"\s*:\s*(true|false)[^{}]*\}/);
+        if (jsonMatch) {
+          const result = JSON.parse(jsonMatch[0]);
+          if (result.success) {
+            setDeploymentSuccess(true);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error deploying from Git:', error);
+      setOperationLogs(prev => prev + `\nError: ${error.message}`);
+    } finally {
+      setGitRepoUrl('');
+    }
+  };
+
   const onNodeContextMenu = useCallback((event, node) => {
     event.preventDefault();
     // Cancel connect mode if active and user right-clicks
@@ -3653,9 +3726,18 @@ const App = ({ user, parentSetMode }) => {
                   <button onClick={handleDownloadYaml} disabled={!yamlOutput.trim()} className="sidebar-action-button">
                     📤 Download YAML
                   </button>
-                  <button className="sidebar-action-button deploy-button" onClick={handleDeploy} disabled={!yamlOutput.trim()}>
-                    🚀 Deploy
-                  </button>
+                  <div className="deploy-buttons-row">
+                    <button className="sidebar-action-button deploy-button half-width" onClick={handleDeploy} disabled={!yamlOutput.trim()}>
+                      🚀 Deploy
+                    </button>
+                    <button
+                      className="sidebar-action-button git-deploy-button half-width"
+                      onClick={() => setShowGitDeployModal(true)}
+                      title="Deploy from Git Repository"
+                    >
+                      🌐 Git
+                    </button>
+                  </div>
                   <button onClick={handleImport} className="sidebar-action-button">
                     📥 Import
                   </button>
@@ -4364,6 +4446,76 @@ const App = ({ user, parentSetMode }) => {
               </div>
               <div className="actions mt-4">
                 <button onClick={() => setIsDeployModalOpen(false)}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Git Deploy Modal */}
+        {showGitDeployModal && (
+          <div className="modal">
+            <div className="modal-content" style={{ width: '500px' }}>
+              <h2>Deploy from Git Repository</h2>
+              <div className="form-content">
+                <div style={{ marginBottom: '15px' }}>
+                  <label htmlFor="git-repo-url" style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                    Git Repository URL:
+                  </label>
+                  <input
+                    id="git-repo-url"
+                    type="text"
+                    value={gitRepoUrl}
+                    onChange={(e) => setGitRepoUrl(e.target.value)}
+                    placeholder="https://github.com/username/repo.git"
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #ccc',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      boxSizing: 'border-box'
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && gitRepoUrl.trim()) {
+                        handleGitDeploy();
+                      }
+                    }}
+                  />
+                  <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                    Enter the full Git repository URL. The system will clone the repository, find the topology YAML, and deploy it.
+                  </p>
+                </div>
+              </div>
+              <div className="actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={handleGitDeploy}
+                  disabled={!gitRepoUrl.trim()}
+                  style={{
+                    backgroundColor: gitRepoUrl.trim() ? '#16a34a' : '#cccccc',
+                    color: 'white',
+                    padding: '8px 20px',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: gitRepoUrl.trim() ? 'pointer' : 'not-allowed',
+                    opacity: gitRepoUrl.trim() ? 1 : 0.6
+                  }}
+                >
+                  Deploy
+                </button>
+                <button
+                  onClick={() => {
+                    setShowGitDeployModal(false);
+                    setGitRepoUrl('');
+                  }}
+                  style={{
+                    padding: '8px 20px',
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    backgroundColor: 'white'
+                  }}
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           </div>
