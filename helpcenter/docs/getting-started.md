@@ -19,42 +19,6 @@ Here's a simple example to get you started:
 3. **Use the Dashboards page**: Use the Dashboards page to access your topology and connect to your topology nodes. 
 4. **View Topology & Destroy**: You can also use the topology button to view the topology of the lab. And once your work is finished, you can either chose to stop the lab (temporary stop) or chose to destroy the lab as shown below
 
-A demo video of above steps is here:
-
-  <video width="800" height="450" controls>
-    <source src="../videos/getting-started-quick.mp4" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
-
-Viewing the topology and destroying the lab after use:
-
-  <video width="800" height="450" controls>
-    <source src="../videos/topology_destroy_1.mp4" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
-
-  <!-- <iframe width="800" height="450" src="https://youtu.be/bXtlpSjblZg" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe> -->
-
-<!-- Testing a Drive hosted video:
-
-  <iframe src="https://drive.google.com/file/d/1R_h4aPA4TR89pSIlmAL8BNH_t99WwTSr/view?usp=sharing"
-          width="800" height="450"
-          allow="autoplay"
-          allowfullscreen>
-  </iframe> -->
-
-<!-- Testing youtube video:
-
-  <iframe width="800" height="450" src="https://youtu.be/bXtlpSjblZg" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-
-Testing a Drive hosted video:
-
-  <iframe src="https://drive.google.com/file/d/1YpzJYmwqUhWeT7r98MtfAc-m-DeK10Ij/view?usp=sharing"
-          width="800" height="450"
-          allow="autoplay"
-          allowfullscreen>
-  </iframe>-->
-
 ## Next Steps
 
 Now that we talked about the basics, you can:

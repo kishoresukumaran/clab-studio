@@ -271,7 +271,6 @@ clab-studio/
 |       +-- guides/             # Step-by-step guides
 |       +-- topology-templates/ # Template documentation
 |       +-- images/             # Screenshots and logos
-|       +-- videos/             # Tutorial videos
 |       +-- stylesheets/        # Custom CSS (Arista branding)
 |       +-- overrides/          # MkDocs theme overrides
 |
