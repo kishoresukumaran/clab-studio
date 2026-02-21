@@ -947,6 +947,184 @@ app.get('/api/system/metrics', async (req, res) => {
   }
 });
 
+// Create a Linux system user on the server
+app.post('/api/system/createUser', async (req, res) => {
+  try {
+    const { username, adminUsername } = req.body;
+
+    if (!username || !adminUsername) {
+      return res.status(400).json({
+        success: false,
+        error: 'Username and adminUsername are required'
+      });
+    }
+
+    // Validate username format to prevent command injection
+    if (!/^[a-z_][a-z0-9_-]{0,31}$/.test(username)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid username format. Use lowercase letters, digits, hyphens, and underscores only.'
+      });
+    }
+
+    console.log(`Creating system user "${username}" via admin "${adminUsername}"`);
+
+    const ssh = new NodeSSH();
+
+    try {
+      await ssh.connect({
+        host: config.serverIp,
+        ...getSshConfig(adminUsername)
+      });
+    } catch (error) {
+      console.error('SSH connection failed:', error);
+      return res.status(500).json({
+        success: false,
+        error: `SSH connection failed: ${error.message}`
+      });
+    }
+
+    try {
+      // Step 1: Create the user with home directory and bash shell
+      const createUserResult = await ssh.execCommand(
+        `echo '${config.sshPassword}' | sudo -S useradd -m -s /bin/bash ${username}`
+      );
+      if (createUserResult.code !== 0 && !createUserResult.stderr.includes('already exists')) {
+        throw new Error(`Failed to create user: ${createUserResult.stderr}`);
+      }
+
+      // Step 2: Set the user's password
+      const setPasswordResult = await ssh.execCommand(
+        `echo '${config.sshPassword}' | sudo -S bash -c "echo '${username}:${config.sshPassword}' | chpasswd"`
+      );
+      if (setPasswordResult.code !== 0) {
+        throw new Error(`Failed to set password: ${setPasswordResult.stderr}`);
+      }
+
+      // Step 3: Add user to required groups (matching existing user kishore's groups)
+      const addGroupsResult = await ssh.execCommand(
+        `echo '${config.sshPassword}' | sudo -S usermod -aG adm,cdrom,sudo,dip,plugdev,users,lpadmin,clab_admins ${username}`
+      );
+      if (addGroupsResult.code !== 0) {
+        throw new Error(`Failed to add groups: ${addGroupsResult.stderr}`);
+      }
+
+      // Step 4: Restart clab-api-server so it picks up the new user
+      // Use Docker Engine API via socket since docker CLI is not in this container
+      console.log('Restarting clab-api-server to register new user...');
+      exec("curl -s --unix-socket /var/run/docker.sock -X POST http://localhost/containers/clab-api-server/restart", (err, stdout, stderr) => {
+        if (err) {
+          console.error('Warning: Failed to restart clab-api-server:', stderr);
+        } else {
+          console.log('clab-api-server restarted successfully');
+        }
+      });
+
+      console.log(`System user "${username}" created successfully`);
+      res.json({
+        success: true,
+        message: `System user "${username}" created successfully`
+      });
+
+    } catch (error) {
+      console.error('Error creating system user:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    } finally {
+      ssh.dispose();
+    }
+
+  } catch (error) {
+    console.error('Server error during user creation:', error);
+    res.status(500).json({
+      success: false,
+      error: `Server error: ${error.message}`
+    });
+  }
+});
+
+// Delete a Linux system user from the server
+app.post('/api/system/deleteUser', async (req, res) => {
+  try {
+    const { username, adminUsername } = req.body;
+
+    if (!username || !adminUsername) {
+      return res.status(400).json({
+        success: false,
+        error: 'Username and adminUsername are required'
+      });
+    }
+
+    // Validate username format to prevent command injection
+    if (!/^[a-z_][a-z0-9_-]{0,31}$/.test(username)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid username format.'
+      });
+    }
+
+    console.log(`Deleting system user "${username}" via admin "${adminUsername}"`);
+
+    const ssh = new NodeSSH();
+
+    try {
+      await ssh.connect({
+        host: config.serverIp,
+        ...getSshConfig(adminUsername)
+      });
+    } catch (error) {
+      console.error('SSH connection failed:', error);
+      return res.status(500).json({
+        success: false,
+        error: `SSH connection failed: ${error.message}`
+      });
+    }
+
+    try {
+      // Delete the user and their home directory
+      const deleteResult = await ssh.execCommand(
+        `echo '${config.sshPassword}' | sudo -S userdel -r ${username}`
+      );
+
+      if (deleteResult.code !== 0) {
+        // If user doesn't exist on the system, treat as success
+        if (deleteResult.stderr.includes('does not exist')) {
+          console.log(`System user "${username}" does not exist on server, skipping`);
+          return res.json({
+            success: true,
+            message: `System user "${username}" did not exist on server (already removed)`
+          });
+        }
+        throw new Error(`Failed to delete user: ${deleteResult.stderr}`);
+      }
+
+      console.log(`System user "${username}" deleted successfully`);
+      res.json({
+        success: true,
+        message: `System user "${username}" deleted successfully`
+      });
+
+    } catch (error) {
+      console.error('Error deleting system user:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    } finally {
+      ssh.dispose();
+    }
+
+  } catch (error) {
+    console.error('Server error during user deletion:', error);
+    res.status(500).json({
+      success: false,
+      error: `Server error: ${error.message}`
+    });
+  }
+});
+
 app.post('/api/files/copyPaste', async (req, res) => {
     try {
         const { sourceServerIp, sourcePath, isDirectory, destinationServerIp, destinationPath, username } = req.body;

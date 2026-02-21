@@ -2,6 +2,16 @@
 
 Web-based platform for designing, deploying, and managing containerlab network topologies.
 
+## Features
+
+- **Topology Designer** — Drag-and-drop visual topology builder with YAML generation
+- **Dashboard** — Monitor and manage deployed topologies across multiple servers
+- **Topology Viewer** — Interactive graph visualization of deployed labs (Cytoscape.js)
+- **Web Terminal** — Browser-based SSH access to lab nodes (XTerm.js + WebSocket)
+- **File Manager** — Browse, edit, upload, and download files on remote servers
+- **User Management** — Role-based access control with admin user provisioning
+- **Help Center** — Built-in documentation site accessible via the `?` icon or `/helpcenter`
+
 ## Quick Start
 
 ```bash
@@ -31,6 +41,7 @@ Access at `http://<your-server-ip>`. Default login: `labadmin` / `arastra`.
 | Containerlab API | 8080 | Official containerlab API server |
 | Mongo Express | 8081 | MongoDB admin UI |
 | MongoDB | 27017 | User database |
+| Help Center (MkDocs) | — | Documentation site (proxied at /helpcenter) |
 
 ## Project Structure
 
@@ -39,6 +50,7 @@ clab-studio/
 ├── auth/           # Authentication service (Express + MongoDB)
 ├── backend/        # Backend API (Express + containerlab CLI)
 ├── frontend/       # React web UI (served via Nginx)
+├── helpcenter/     # Help center documentation (MkDocs Material)
 ├── docker-compose.yml
 ├── setup.sh
 ├── clab-config.env.example

@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+  <!-- Cache-busted custom CSS -->
+  <link rel="stylesheet" href="{{ 'stylesheets/extra.min.css' | url }}?v={{ config.extra.cache_id }}">
+{% endblock %}

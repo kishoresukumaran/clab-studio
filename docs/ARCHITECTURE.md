@@ -7,7 +7,7 @@
 
 ## System Overview
 
-Containerlab Studio is a web-based platform for designing, deploying, and managing containerlab network topologies. It uses a 3-tier architecture, fully containerized with Docker.
+Containerlab Studio is a web-based platform for designing, deploying, and managing containerlab network topologies. It uses a multi-service architecture, fully containerized with Docker.
 
 ```
 +---------------------------------------------------------------------+
@@ -22,10 +22,12 @@ Containerlab Studio is a web-based platform for designing, deploying, and managi
 |  |  +-> Serve React SPA                                           | |
 |  |  +-> Proxy /login -> Backend:8080                              | |
 |  |  +-> Proxy /api/* -> Backend:8080                              | |
+|  |  +-> Proxy /helpcenter/* -> Help Center                        | |
 |  |                                                                | |
 |  |  React Application                                             | |
 |  |  +-> Topology Designer (ReactFlow)                             | |
 |  |  +-> Dashboard (Server Management)                             | |
+|  |  +-> Topology Viewer (Cytoscape.js)                            | |
 |  |  +-> Web Terminal (XTerm.js + WebSocket)                       | |
 |  |  +-> File Manager (SFTP via backend)                           | |
 |  |  +-> YAML Editor                                               | |
@@ -72,6 +74,15 @@ Containerlab Studio is a web-based platform for designing, deploying, and managi
 |  |  +-> Web-based database admin UI                               | |
 |  +---------------------------------------------------------------+ |
 |                                                                     |
+|  +---------------------------------------------------------------+ |
+|  |  HELP CENTER (internal, no exposed port)                       | |
+|  |  Location: helpcenter/                                         | |
+|  |                                                                | |
+|  |  MkDocs Material (static site)                                 | |
+|  |  +-> Served via Nginx inside container                         | |
+|  |  +-> Proxied at /helpcenter through Frontend Nginx             | |
+|  +---------------------------------------------------------------+ |
+|                                                                     |
 +---------------------------------------------------------------------+
 ```
 
@@ -101,6 +112,7 @@ All services are defined in the root `docker-compose.yml`.
 | auth-api              | auth-api               | ./auth/api           | clab-network     | depends_on mongo healthy        |
 | containerlab-api      | containerlab-api       | ./backend            | host (privileged)| Docker socket, host networking  |
 | containerlab-designer | containerlab-designer  | ./frontend           | clab-network     | Build args for REACT_APP_* vars |
+| helpcenter            | clab-helpcenter        | ./helpcenter         | clab-network     | MkDocs docs, proxied via frontend |
 
 The backend uses `network_mode: "host"` and `privileged: true` because it needs direct access to the Docker socket, SSH connections, and containerlab operations.
 
@@ -161,6 +173,24 @@ User clicks SSH button on a node
   -> XTerm.js renders terminal output in browser
 ```
 
+### Topology Viewer
+
+```
+User clicks "Topology" button on a deployed lab in Dashboard
+  -> Frontend GET http://<SERVER_IP>:3001/api/files/read
+     ?path=<labPath>&serverIp=<serverIp>&username=<username>
+  -> Backend SSHs to server, reads YAML file content
+  -> Returns YAML as string in response
+  -> Frontend parses YAML client-side (js-yaml)
+  -> Converts to Cytoscape.js format (nodes + edges)
+     - Nodes: id, label, kind, mgmt_ip, config, container_name
+     - Edges: source, target, source_interface, target_interface
+  -> Opens fullscreen TopologyModal
+  -> Cytoscape.js renders interactive graph (cose-bilkent layout)
+  -> Click nodes/edges to inspect details in info panel
+  -> Toolbar: Fit View, Reset Layout, Toggle Labels, Export PNG
+```
+
 ### File Management
 
 ```
@@ -181,7 +211,7 @@ User opens File Manager
 clab-studio/
 +-- clab-config.env.example      # Configuration template (committed)
 +-- clab-config.env              # Actual config (git-ignored, has secrets)
-+-- docker-compose.yml           # All 5 services in one file
++-- docker-compose.yml           # All 6 services in one file
 +-- setup.sh                     # One-command setup script
 +-- Makefile                     # Convenience targets
 +-- README.md                    # Quick start guide
@@ -214,6 +244,11 @@ clab-studio/
 |   |   +-- components/
 |   |   |   +-- ContainerLab.js  # Topology designer (main component)
 |   |   |   +-- ClabServers.js   # Dashboard with server list
+|   |   |   +-- topology/
+|   |   |   |   +-- TopologyModal.js    # Fullscreen Cytoscape.js viewer modal
+|   |   |   |   +-- TopologyModal.css   # Viewer styles
+|   |   |   |   +-- topologyParser.js   # YAML-to-Cytoscape parser
+|   |   |   |   +-- topologyStyles.js   # Cytoscape node/edge styles & layout
 |   |   |   +-- FileManagerModal.js
 |   |   |   +-- WebTerminal.js   # SSH terminal via WebSocket
 |   |   |   +-- Login.js
@@ -225,6 +260,19 @@ clab-studio/
 |   |       +-- TopologyContext.js
 |   +-- public/
 |   +-- server/                  # Server-side helpers
+|
++-- helpcenter/                  # Help center documentation (MkDocs)
+|   +-- Dockerfile              # Multi-stage: Python build -> Nginx serve
+|   +-- mkdocs.yml              # MkDocs Material configuration
+|   +-- requirements.txt        # Python dependencies
+|   +-- docs/                   # Documentation source files
+|       +-- index.md            # Home page
+|       +-- getting-started.md  # Getting started guide
+|       +-- guides/             # Step-by-step guides
+|       +-- topology-templates/ # Template documentation
+|       +-- images/             # Screenshots and logos
+|       +-- stylesheets/        # Custom CSS (Arista branding)
+|       +-- overrides/          # MkDocs theme overrides
 |
 +-- docs/
     +-- ARCHITECTURE.md          # This file
@@ -244,8 +292,7 @@ All configuration is centralized in `clab-config.env` at the repo root.
 | `CONTAINERLAB_API_PORT`| Containerlab API port                          | 8080                                           |
 | `FRONTEND_PORT`        | Frontend / Nginx port                          | 80                                             |
 | `CLAB_SERVERS`         | Comma-separated server list (name:ip)          | ul-clab-1:<SERVER_IP>                          |
-| `SSH_USERNAME`         | SSH user for backend operations                | student                                        |
-| `SSH_PASSWORD`         | SSH password                                   | (set in config)                                |
+| `SSH_PASSWORD`         | SSH password for backend operations            | (set in config)                                |
 | `TOPOLOGY_PATH`        | Topology file storage directory                | /home/clab_nfs_share/containerlab_topologies   |
 | `LAB_ADMIN_USER`       | Default admin username                         | labadmin                                       |
 | `LAB_ADMIN_PASSWORD`   | Default admin password                         | (set in config)                                |
@@ -319,6 +366,7 @@ make status
 docker compose logs auth-api
 docker compose logs containerlab-api
 docker compose logs containerlab-designer
+docker compose logs helpcenter
 
 # Check for port conflicts
 ss -tulpn | grep -E "80|3000|3001|8080|8081|27017"
@@ -373,6 +421,23 @@ docker compose logs containerlab-api | grep -i websocket
 
 # Test SSH connectivity from backend container
 docker exec containerlab-api ssh -o StrictHostKeyChecking=no student@<SERVER_IP> echo "OK"
+```
+
+### Help Center Not Loading
+
+```bash
+# Check helpcenter container is running
+docker compose ps helpcenter
+
+# Check helpcenter logs
+docker compose logs helpcenter
+
+# Test direct access from frontend container
+docker exec containerlab-designer curl -s -o /dev/null -w "%{http_code}" http://clab-helpcenter:80/
+
+# Rebuild helpcenter if content changed
+make build
+make restart
 ```
 
 ### Containerlab Operations Fail

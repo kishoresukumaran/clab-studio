@@ -114,7 +114,7 @@ const MainApp = ({ user, onLogout }) => {
             )}
             <button onClick={onLogout}>Logout</button>
             <a 
-              href="https://docs.google.com/document/d/1CKyCFyzjFMJbTFTtHYIofAoAlof8oMdmPElNkc1HKjk/edit?usp=sharing" 
+              href="/helpcenter" 
               target="_blank" 
               rel="noopener noreferrer"
               className="help-button"

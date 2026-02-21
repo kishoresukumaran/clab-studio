@@ -1,0 +1,98 @@
+/* Arista branding colors */
+:root {
+  --md-primary-fg-color: #072452;
+  --md-primary-fg-color--light: #0D3B7A;
+  --md-primary-fg-color--dark: #041633;
+  --md-accent-fg-color: #00A0E3;
+}
+
+/* Custom header styling to match Arista Community Labs */
+.md-header {
+  background-color: #072452;
+}
+
+/* Make header navigation text more visible */
+.md-header__title,
+.md-header__button,
+.md-header-nav__button {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* Logo styling - make it bigger and more visible */
+.md-header__button.md-logo {
+  padding: 0;
+  margin: 0.4rem 0.8rem;
+}
+
+.md-header__button.md-logo img,
+.md-logo img {
+  height: 48px;
+  width: auto;
+  filter: brightness(1.1);
+}
+
+/* Make repository name and source info visible */
+.md-source,
+.md-source__repository,
+.md-source__icon,
+.md-source__fact {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.md-source:hover {
+  color: rgba(255, 255, 255, 1) !important;
+}
+
+/* Navigation tabs - make text more visible */
+.md-tabs {
+  background-color: #072452;
+  display: block !important;
+  visibility: visible !important;
+  height: auto !important;
+  min-height: 48px;
+}
+
+.md-tabs__list {
+  display: flex !important;
+}
+
+.md-tabs__link {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-weight: 500;
+  opacity: 0.85;
+  display: block !important;
+}
+
+.md-tabs__link:hover,
+.md-tabs__link--active {
+  color: rgba(255, 255, 255, 1) !important;
+  opacity: 1;
+}
+
+.md-tabs__item {
+  display: inline-block !important;
+  visibility: visible !important;
+}
+
+/* Search box text */
+.md-search__input {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.md-search__input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Link colors */
+a {
+  color: #0066CC;
+}
+
+a:hover {
+  color: #00549F;
+}
+
+/* Code block styling */
+.highlight {
+  background-color: #f5f5f5;
+}
