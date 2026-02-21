@@ -7,7 +7,7 @@
 
 ## System Overview
 
-Containerlab Studio is a web-based platform for designing, deploying, and managing containerlab network topologies. It uses a 3-tier architecture, fully containerized with Docker.
+Containerlab Studio is a web-based platform for designing, deploying, and managing containerlab network topologies. It uses a multi-service architecture, fully containerized with Docker.
 
 ```
 +---------------------------------------------------------------------+
@@ -22,6 +22,7 @@ Containerlab Studio is a web-based platform for designing, deploying, and managi
 |  |  +-> Serve React SPA                                           | |
 |  |  +-> Proxy /login -> Backend:8080                              | |
 |  |  +-> Proxy /api/* -> Backend:8080                              | |
+|  |  +-> Proxy /helpcenter/* -> Help Center                        | |
 |  |                                                                | |
 |  |  React Application                                             | |
 |  |  +-> Topology Designer (ReactFlow)                             | |
@@ -73,6 +74,15 @@ Containerlab Studio is a web-based platform for designing, deploying, and managi
 |  |  +-> Web-based database admin UI                               | |
 |  +---------------------------------------------------------------+ |
 |                                                                     |
+|  +---------------------------------------------------------------+ |
+|  |  HELP CENTER (internal, no exposed port)                       | |
+|  |  Location: helpcenter/                                         | |
+|  |                                                                | |
+|  |  MkDocs Material (static site)                                 | |
+|  |  +-> Served via Nginx inside container                         | |
+|  |  +-> Proxied at /helpcenter through Frontend Nginx             | |
+|  +---------------------------------------------------------------+ |
+|                                                                     |
 +---------------------------------------------------------------------+
 ```
 
@@ -102,6 +112,7 @@ All services are defined in the root `docker-compose.yml`.
 | auth-api              | auth-api               | ./auth/api           | clab-network     | depends_on mongo healthy        |
 | containerlab-api      | containerlab-api       | ./backend            | host (privileged)| Docker socket, host networking  |
 | containerlab-designer | containerlab-designer  | ./frontend           | clab-network     | Build args for REACT_APP_* vars |
+| helpcenter            | clab-helpcenter        | ./helpcenter         | clab-network     | MkDocs docs, proxied via frontend |
 
 The backend uses `network_mode: "host"` and `privileged: true` because it needs direct access to the Docker socket, SSH connections, and containerlab operations.
 
@@ -200,7 +211,7 @@ User opens File Manager
 clab-studio/
 +-- clab-config.env.example      # Configuration template (committed)
 +-- clab-config.env              # Actual config (git-ignored, has secrets)
-+-- docker-compose.yml           # All 5 services in one file
++-- docker-compose.yml           # All 6 services in one file
 +-- setup.sh                     # One-command setup script
 +-- Makefile                     # Convenience targets
 +-- README.md                    # Quick start guide
@@ -249,6 +260,20 @@ clab-studio/
 |   |       +-- TopologyContext.js
 |   +-- public/
 |   +-- server/                  # Server-side helpers
+|
++-- helpcenter/                  # Help center documentation (MkDocs)
+|   +-- Dockerfile              # Multi-stage: Python build -> Nginx serve
+|   +-- mkdocs.yml              # MkDocs Material configuration
+|   +-- requirements.txt        # Python dependencies
+|   +-- docs/                   # Documentation source files
+|       +-- index.md            # Home page
+|       +-- getting-started.md  # Getting started guide
+|       +-- guides/             # Step-by-step guides
+|       +-- topology-templates/ # Template documentation
+|       +-- images/             # Screenshots and logos
+|       +-- videos/             # Tutorial videos
+|       +-- stylesheets/        # Custom CSS (Arista branding)
+|       +-- overrides/          # MkDocs theme overrides
 |
 +-- docs/
     +-- ARCHITECTURE.md          # This file
@@ -342,6 +367,7 @@ make status
 docker compose logs auth-api
 docker compose logs containerlab-api
 docker compose logs containerlab-designer
+docker compose logs helpcenter
 
 # Check for port conflicts
 ss -tulpn | grep -E "80|3000|3001|8080|8081|27017"
@@ -396,6 +422,23 @@ docker compose logs containerlab-api | grep -i websocket
 
 # Test SSH connectivity from backend container
 docker exec containerlab-api ssh -o StrictHostKeyChecking=no student@<SERVER_IP> echo "OK"
+```
+
+### Help Center Not Loading
+
+```bash
+# Check helpcenter container is running
+docker compose ps helpcenter
+
+# Check helpcenter logs
+docker compose logs helpcenter
+
+# Test direct access from frontend container
+docker exec containerlab-designer curl -s -o /dev/null -w "%{http_code}" http://clab-helpcenter:80/
+
+# Rebuild helpcenter if content changed
+make build
+make restart
 ```
 
 ### Containerlab Operations Fail
