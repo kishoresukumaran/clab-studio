@@ -110,6 +110,20 @@ services:
     networks:
       - clab-network
 
+  # =============================================
+  # HELP CENTER DOCUMENTATION
+  # =============================================
+
+  helpcenter:
+    build:
+      context: ./helpcenter
+      args:
+        - SERVER_IP=${SERVER_IP}
+    container_name: clab-helpcenter
+    restart: unless-stopped
+    networks:
+      - clab-network
+
 volumes:
   mongodb_data:
 
