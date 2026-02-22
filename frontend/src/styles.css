@@ -1994,6 +1994,40 @@ button[type="submit"]:active {
   background-color: #cccccc;
 }
 
+/* Special styling for git deploy button in sidebar */
+.sidebar-action-button.git-deploy-button {
+  background-color: #7c3aed;
+  color: white;
+}
+
+.sidebar-action-button.git-deploy-button:hover {
+  background-color: #6d28d9;
+}
+
+.sidebar-action-button.git-deploy-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+  color: #666666;
+}
+
+.sidebar-action-button.git-deploy-button:disabled:hover {
+  background-color: #cccccc;
+}
+
+/* Deploy buttons row - side by side layout */
+.deploy-buttons-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.sidebar-action-button.half-width {
+  width: calc(50% - 4px);
+  font-size: 13px;
+  padding: 8px 4px;
+}
+
 .bind-input-group {
   margin-bottom: 10px;
 }

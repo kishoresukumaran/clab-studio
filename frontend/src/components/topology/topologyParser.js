@@ -24,7 +24,6 @@ export function parseContainerlabYaml(yamlContent) {
   // Process nodes for Cytoscape.js
   const cyNodes = Object.entries(nodes).map(([nodeName, nodeConfig]) => {
     const nodeKind = (nodeConfig && nodeConfig.kind) || 'unknown';
-    const mgmtIp = (nodeConfig && nodeConfig['mgmt-ipv4']) || '';
     const nodeClass = 'node-' + nodeKind.toLowerCase();
     const containerName = `clab-${topoName}-${nodeName}`;
     const fqdn = `${nodeName}.${topoName}`;
@@ -34,7 +33,6 @@ export function parseContainerlabYaml(yamlContent) {
         id: nodeName,
         label: nodeName,
         kind: nodeKind,
-        mgmt_ip: mgmtIp,
         config: nodeConfig || {},
         topo_name: topoName,
         container_name: containerName,

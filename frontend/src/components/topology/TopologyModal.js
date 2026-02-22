@@ -188,11 +188,8 @@ const TopologyModal = ({ isOpen, onClose, topologyData, topologyName }) => {
       {renderInfoItem('Topology', data.topo_name)}
       {renderInfoItem('Container', data.container_name)}
       {renderInfoItem('FQDN', data.fqdn)}
-      {renderInfoItem('Management IP', data.mgmt_ip)}
       {data.config && (
         <>
-          {renderInfoItem('Management IPv4', data.config['mgmt-ipv4'])}
-          {renderInfoItem('Management IPv6', data.config['mgmt-ipv6'])}
           {renderInfoItem('Image', data.config.image)}
           {renderInfoItem('Kind', data.config.kind)}
           {renderInfoItem('Startup Config', data.config['startup-config'])}

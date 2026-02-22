@@ -5,6 +5,9 @@ clab-config.env
 # Node modules (all services)
 **/node_modules/
 
+# Lock files
+**/package-lock.json
+
 # Generated files
 frontend/.env
 frontend/nginx.conf
