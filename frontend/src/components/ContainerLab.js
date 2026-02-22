@@ -155,47 +155,6 @@ const randomNames = {
   ]
 };
 
-/**
- * Generates a list of sequential IP addresses from a given subnet.
- */
-const generateIpsFromSubnet = (subnet, count) => {
-  // Parse the subnet string (e.g., "172.20.20.0/24")
-  if (!subnet || !subnet.trim()) return [];
-  
-  try {
-    // Extract the base IP and mask
-    const parts = subnet.split('/');
-    if (parts.length !== 2) return [];
-    
-    const baseIpStr = parts[0];
-    const mask = parseInt(parts[1], 10);
-    
-    if (isNaN(mask) || mask < 0 || mask > 32) return [];
-    
-
-    const ipParts = baseIpStr.split('.');
-    if (ipParts.length !== 4) return [];
-    
-    const baseIp = ipParts.map(part => parseInt(part, 10));
-    if (baseIp.some(part => isNaN(part) || part < 0 || part > 255)) return [];
-
-    const generatedIps = [];
-
-    for (let i = 0; i < count; i++) {
-      const hostNum = i + 2; // Start from .2 to avoid the first and last IP addresses in the subnet
-      if (hostNum >= 255) break; // Avoid broadcast address
-      
-      const newIp = [...baseIp];
-      newIp[3] = hostNum;
-      generatedIps.push(newIp.join('.'));
-    }
-    
-    return generatedIps;
-  } catch (error) {
-    console.error("Error parsing subnet:", error);
-    return [];
-  }
-};
 
 /**
  * Main component for the Containerlab Studio.
@@ -221,23 +180,9 @@ const App = ({ user, parentSetMode }) => {
   const [newNode, setNewNode] = useState(null);
   const [nodeName, setNodeName] = useState("");
   const [nodeBinds, setNodeBinds] = useState([{ source: '', target: '' }]);
-  const [nodeMgmtIp, setNodeMgmtIp] = useState("");
-  const [mgmtNetwork, setMgmtNetwork] = useState(topologyState.mgmtNetwork);
-  const [ipv4Subnet, setIpv4Subnet] = useState(topologyState.ipv4Subnet);
-  const [ipv6Subnet, setIpv6Subnet] = useState(topologyState.ipv6Subnet);
   const [isYamlValid, setIsYamlValid] = useState(topologyState.isYamlValid);
   const [yamlParseError, setYamlParseError] = useState(topologyState.yamlParseError);
-  const [kinds, setKinds] = useState(topologyState.kinds);
-  const [defaultKind, setDefaultKind] = useState(topologyState.defaultKind);
-  const [showMgmt, setShowMgmt] = useState(topologyState.showMgmt);
-  const [showKind, setShowKind] = useState(topologyState.showKind);
-  const [kindName, setKindName] = useState("");
-  const [showIpv6, setShowIpv6] = useState(topologyState.showIpv6);
   const [contextMenu, setContextMenu] = useState(null);
-  const [showKindConfig, setShowKindConfig] = useState(false);
-  const [showDefault, setShowDefault] = useState(topologyState.showDefault);
-  const [showKindModal, setShowKindModal] = useState(false);
-  const [currentKindIndex, setCurrentKindIndex] = useState(0);
   const [isEdgeModalOpen, setIsEdgeModalOpen] = useState(false);
   const [newEdgeData, setNewEdgeData] = useState(null);
   const [sourceInterface, setSourceInterface] = useState("");
@@ -260,13 +205,8 @@ const App = ({ user, parentSetMode }) => {
   const [showLogModal, setShowLogModal] = useState(false);
   const [operationLogs, setOperationLogs] = useState('');
   const [operationTitle, setOperationTitle] = useState('');
-  const [showSshPortForwarding, setShowSshPortForwarding] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [mgmtWarning, setMgmtWarning] = useState(false);
-  const [selectedSshServer, setSelectedSshServer] = useState('');
-  const [freePorts, setFreePorts] = useState([]);
-  const [isLoadingPorts, setIsLoadingPorts] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [deploymentSuccess, setDeploymentSuccess] = useState(false);
   const [modalMode, setModalMode] = useState('import');
@@ -280,19 +220,23 @@ const App = ({ user, parentSetMode }) => {
   const [isLoadingServerResources, setIsLoadingServerResources] = useState(false);
   const [nodeStartupConfig, setNodeStartupConfig] = useState('');
   const [showFileManagerForStartupConfig, setShowFileManagerForStartupConfig] = useState(false);
-  const [showFileManagerForKindStartupConfig, setShowFileManagerForKindStartupConfig] = useState(false);
+
   const [showFileManager, setShowFileManager] = useState(false);
   const [showFileManagerForBind, setShowFileManagerForBind] = useState(false);
   const [activeBindIndex, setActiveBindIndex] = useState(null);
-  const [showGlobalSettings, setShowGlobalSettings] = useState(false);
   const [showOptionalSettings, setShowOptionalSettings] = useState(false);
   const [selectedTopologyNodes, setSelectedTopologyNodes] = useState([]);
   const [showGitDeployModal, setShowGitDeployModal] = useState(false);
   const [gitRepoUrl, setGitRepoUrl] = useState('');
+  const [showTopoFileSelectModal, setShowTopoFileSelectModal] = useState(false);
+  const [gitTopoFiles, setGitTopoFiles] = useState([]);
+  const [selectedTopoFile, setSelectedTopoFile] = useState('');
+  const [gitClonedDir, setGitClonedDir] = useState('');
+  const [gitRepoName, setGitRepoName] = useState('');
+  const [isGitScanning, setIsGitScanning] = useState(false);
   const [serverMetrics, setServerMetrics] = useState({});
   const [nodeCustomFields, setNodeCustomFields] = useState([{ key: '', value: '' }]);
   const [modalType, setModalType] = useState("create");
-  const [nodeIpv6MgmtIp, setNodeIpv6MgmtIp] = useState("");
 
   // Generate topology modal states
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
@@ -424,7 +368,6 @@ const App = ({ user, parentSetMode }) => {
         setIsModalOpen(false);
         setNodeName("");
         setNodeBinds([""]);
-        setNodeMgmtIp("");
       }
     };
     window.addEventListener("keydown", handleEsc);
@@ -432,31 +375,6 @@ const App = ({ user, parentSetMode }) => {
       window.removeEventListener("keydown", handleEsc);
     };
   }, []);
-
-  useEffect(() => {
-    if (showMgmt) {
-      updateYaml(nodes, edges);
-    }
-  }, [mgmtNetwork, ipv4Subnet, ipv6Subnet]);
-
-  useEffect(() => {
-    if (showDefault && defaultKind) {
-      updateYaml(nodes, edges);
-    }
-  }, [defaultKind]);
-
-  useEffect(() => {
-    if (showKind) {
-      updateYaml(nodes, edges);
-    }
-  }, [showKind, kinds]);
-
-  useEffect(() => {
-    // Only update YAML if there's something to show
-    if (nodes.length > 0 || topologyName || showMgmt || showKind || showDefault) {
-      updateYaml(nodes, edges);
-    }
-  }, [showMgmt, showKind, showDefault]);
 
   const getNextInterfaceNumber = (nodeId) => {
     const usedInterfaces = nodeInterfaces[nodeId] || [];
@@ -485,11 +403,6 @@ const App = ({ user, parentSetMode }) => {
   const onNodeTap = useCallback(
     (nodeData) => {
       if (connectSourceNode && nodeData.id !== connectSourceNode.id) {
-        // Check if management settings are valid when required
-        if (showMgmt && !validateMgmtSettings()) {
-          setConnectSourceNode(null);
-          return;
-        }
 
         const sourceNode = nodes.find((n) => n.id === connectSourceNode.id);
         const targetNode = nodes.find((n) => n.id === nodeData.id);
@@ -515,7 +428,7 @@ const App = ({ user, parentSetMode }) => {
         setConnectSourceNode(null);
       }
     },
-    [connectSourceNode, nodes, nodeInterfaces, showMgmt, mgmtNetwork, ipv4Subnet]
+    [connectSourceNode, nodes, nodeInterfaces]
   );
 
   /* This is the function to validate the topology name. It is used to check if the topology name is empty. */
@@ -527,25 +440,9 @@ const App = ({ user, parentSetMode }) => {
     return true;
   };
 
-  /* This is the function to validate the management settings. It is used to check if the management network and subnet are set. */
-  const validateMgmtSettings = () => {
-    if (showMgmt && (!mgmtNetwork.trim() || !ipv4Subnet.trim())) {
-      setMgmtWarning(true);
-      return false;
-    }
-    setMgmtWarning(false);
-    return true;
-  };
-
   /* This is the function to handle the drop event. It is used to create a new node when a node is dropped on the canvas. */
   const onDrop = useCallback(
     (event) => {
-      // Check if management settings are valid when required
-      if (showMgmt && !validateMgmtSettings()) {
-        event.preventDefault();
-        return;
-      }
-
       if (!topologyName.trim()) {
         const newName = generateRandomName();
         setTopologyName(newName);
@@ -597,11 +494,10 @@ const App = ({ user, parentSetMode }) => {
       
       setNodeCount(1);
       setNodeBinds([""]);
-      setNodeMgmtIp("");
       setNodeModalWarning(false);
       setNodeCustomFields([{ key: '', value: '' }]);
     },
-    [nodes, edges, topologyName, yamlOutput, showMgmt, mgmtNetwork, ipv4Subnet]
+    [nodes, edges, topologyName, yamlOutput]
   );
 
   const onDragOver = useCallback((event) => {
@@ -625,11 +521,6 @@ const App = ({ user, parentSetMode }) => {
   /* This is the function to handle clicking on node buttons in the sidebar. It creates a node at the center of the canvas. */
   const onNodeClick = useCallback(
     (nodeType) => {
-      // Check if management settings are valid when required
-      if (showMgmt && !validateMgmtSettings()) {
-        return;
-      }
-
       if (!topologyName.trim()) {
         const newName = generateRandomName();
         setTopologyName(newName);
@@ -675,11 +566,10 @@ const App = ({ user, parentSetMode }) => {
       
       setNodeCount(1);
       setNodeBinds([""]);
-      setNodeMgmtIp("");
       setNodeModalWarning(false);
       setNodeCustomFields([{ key: '', value: '' }]);
     },
-    [yamlOutput, showMgmt, validateMgmtSettings, topologyName]
+    [yamlOutput, topologyName]
   );
 
   /* Helper function to check if number is even */
@@ -1082,12 +972,9 @@ const App = ({ user, parentSetMode }) => {
 
   /* This is the function to update the YAML output of the topology. It is used to update the YAML output of the topology when a node or an edge is added or removed. */
   const updateYaml = (updatedNodes, updatedEdges) => {
-    // If there are no nodes and no explicit topology settings, return empty YAML
+    // If there are no nodes and no topology name, return empty YAML
     if (
-      updatedNodes.length === 0 && 
-      !showMgmt && 
-      !showKind && 
-      !showDefault && 
+      updatedNodes.length === 0 &&
       topologyName === ""
     ) {
       setYamlOutput("");
@@ -1132,14 +1019,6 @@ const App = ({ user, parentSetMode }) => {
         yamlObject.topology.nodes[nodeKey].binds = existingNode.binds;
       }
 
-      if (node.data.mgmtIp) {
-        yamlObject.topology.nodes[nodeKey]['mgmt-ipv4'] = node.data.mgmtIp;
-      }
-      
-      if (node.data.ipv6MgmtIp) {
-        yamlObject.topology.nodes[nodeKey]['mgmt-ipv6'] = node.data.ipv6MgmtIp;
-      }
-
       if (node.data.startupConfig && node.data.startupConfig.trim() !== '') {
         yamlObject.topology.nodes[nodeKey]['startup-config'] = node.data.startupConfig;
       }
@@ -1165,54 +1044,6 @@ const App = ({ user, parentSetMode }) => {
           ]
         };
       });
-    }
-
-    
-    if (showMgmt) {
-      yamlObject.mgmt = {
-        network: mgmtNetwork,
-        ipv4_subnet: ipv4Subnet
-      };
-
-      if (showIpv6 && ipv6Subnet) {
-        yamlObject.mgmt.ipv6_subnet = ipv6Subnet;
-      }
-    }
-
-    
-    if (showDefault && defaultKind) {
-      yamlObject.topology.defaults = {
-        kind: defaultKind
-      };
-    }
-
-    
-    if (showKind && kinds.length > 0) {
-      const validKinds = kinds.filter(kind => kind.name.trim() !== '');
-      
-      if (validKinds.length > 0) {
-        yamlObject.topology.kinds = {};
-
-        validKinds.forEach((kind) => {
-          yamlObject.topology.kinds[kind.name] = {};
-
-          if (kind.config.showStartupConfig && kind.config.startupConfig.trim() !== '') {
-            yamlObject.topology.kinds[kind.name]['startup-config'] = kind.config.startupConfig;
-          }
-
-          if (kind.config.showImage && kind.config.image.trim() !== '') {
-            yamlObject.topology.kinds[kind.name].image = kind.config.image;
-          }
-
-          if (kind.config.showExec && kind.config.exec.length > 0 && kind.config.exec[0].trim() !== '') {
-            yamlObject.topology.kinds[kind.name].exec = kind.config.exec.filter(exec => exec.trim() !== '');
-          }
-
-          if (kind.config.showBinds && kind.config.binds.length > 0 && kind.config.binds[0].trim() !== '') {
-            yamlObject.topology.kinds[kind.name].binds = kind.config.binds.filter(bind => bind.trim() !== '');
-          }
-        });
-      }
     }
 
     const yamlString = yaml.dump(yamlObject, { 
@@ -1245,7 +1076,6 @@ const App = ({ user, parentSetMode }) => {
           if (node.data.binds?.some(bind => bind.trim())) {
             nodeConfig.binds = node.data.binds.filter(bind => bind.trim());
           }
-          if (node.data.mgmtIp?.trim()) nodeConfig['mgmt-ipv4'] = node.data.mgmtIp;
           if (node.data.startupConfig?.trim()) nodeConfig['startup-config'] = node.data.startupConfig;
           
           acc[node.data.label] = nodeConfig;
@@ -1260,34 +1090,6 @@ const App = ({ user, parentSetMode }) => {
       }
     };
 
-    if (showMgmt) {
-      yamlData.mgmt = {
-        network: mgmtNetwork,
-        "ipv4-subnet": ipv4Subnet,
-        ...(showIpv6 && ipv6Subnet && { "ipv6-subnet": ipv6Subnet })
-      };
-    }
-
-    if (showKind && kinds.length > 0) {
-      yamlData.topology = yamlData.topology || {};
-      yamlData.topology.kinds = kinds.reduce((acc, kind) => {
-        if (kind.name) {
-          acc[kind.name] = {
-            ...(kind.config.showStartupConfig && { 'startup-config': kind.config.startupConfig }),
-            ...(kind.config.showImage && { image: kind.config.image }),
-            ...(kind.config.showExec && { exec: kind.config.exec.filter(e => e) }),
-            ...(kind.config.showBinds && { binds: kind.config.binds.filter(b => b) })
-          };
-        }
-        return acc;
-      }, {});
-    }
-
-    if (showDefault && defaultKind.trim()) {
-      yamlData.topology = yamlData.topology || {};
-      yamlData.topology.defaults = { kind: defaultKind };
-    }
-
     const generatedYaml = yaml.dump(yamlData, {
       lineWidth: -1,
       quotingType: '"',
@@ -1301,156 +1103,6 @@ const App = ({ user, parentSetMode }) => {
       yamlOutput: generatedYaml,
       editableYaml: generatedYaml
     });
-  };
-
-  /* This is the function to handle the change in the management settings in Global optional settings. It is used to update the YAML output of the topology when the management settings are changed. */
-  const handleMgmtCheckbox = (e) => {
-    if (!topologyName.trim()) {
-      const newName = generateRandomName();
-      setTopologyName(newName);
-      // Update the YAML with the new name
-      const updatedYaml = yamlOutput.replace(/name:.*/, `name: ${newName}`);
-      setYamlOutput(updatedYaml);
-    }
-    
-    const isChecked = e.target.checked;
-    setShowMgmt(isChecked);
-    
-    if (!isChecked) {
-      // When unchecking, clear management IPs and settings
-      setMgmtNetwork('');
-      setIpv4Subnet('');
-      setIpv6Subnet('');
-      setShowIpv6(false);
-      
-      // Clear management IPs from all nodes
-      setNodes(currentNodes => 
-        currentNodes.map(node => ({
-          ...node,
-          data: {
-            ...node.data,
-            mgmtIp: ''
-          }
-        }))
-      );
-    } else if (isChecked && ipv4Subnet.trim()) {
-      // If enabling and we already have a subnet, auto-assign IPs
-      autoAssignMgmtIPs(ipv4Subnet);
-    }
-    
-    updateYaml(nodes, edges);
-  };
-
-  /* This is the function to handle the change in the IPv4 subnet. It is used to update the YAML output of the topology when the IPv4 settings is changed. */
-  const handleIpv4SubnetChange = (event) => {
-    const newValue = event.target.value;
-    setIpv4Subnet(newValue);
-    
-    // Clear warning if this is now valid
-    if (showMgmt && newValue.trim() && mgmtNetwork.trim()) {
-      setMgmtWarning(false);
-      
-      // If subnet is valid and we have nodes, auto-assign IPs
-      autoAssignMgmtIPs(newValue);
-    }
-  };
-  
-  // Function to automatically assign management IPs to nodes
-  const autoAssignMgmtIPs = (subnet) => {
-    if (!nodes.length) return;
-    
-    // Generate IPs for all nodes
-    const ips = generateIpsFromSubnet(subnet, nodes.length);
-    if (!ips.length) return;
-    
-    // Update each node with a management IP
-    const updatedNodes = nodes.map((node, index) => {
-      if (index < ips.length) {
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            mgmtIp: ips[index]
-          }
-        };
-      }
-      return node;
-    });
-    
-    // Update nodes state and update YAML after state is updated
-    setNodes(updatedNodes);
-    
-    // Use setTimeout to ensure state update has completed
-    setTimeout(() => {
-      updateYaml(updatedNodes, edges);
-    }, 10);
-  };
-
-  /* This is the function to handle the change in the IPv6 subnet. It is used to update the YAML output of the topology when the IPv6 settings is changed. */
-  const handleIpv6SubnetChange = (event) => {
-    const newValue = event.target.value;
-    setIpv6Subnet(newValue);
-  };
-
-  /* This is the function to handle the change in the kind. It is used to update the YAML output of the topology when the kind is changed. */
-  const handleConfigureKind = () => {
-    setShowKindModal(true);
-  };
-
-  /* This is the function to handle the change in the default kind. It is used to update the YAML output of the topology when the default kind is changed. */
-  const handleDefaultKindChange = (event) => {
-    const newValue = event.target.value;
-    setDefaultKind(newValue);
-  };
-
-  /* This is the function to handle the change in the kind name. It is used to update the YAML output of the topology when the kind name is changed. */
-  const handleKindNameChange = (index, value) => {
-    const newKinds = [...kinds];
-    newKinds[index].name = value;
-    setKinds(newKinds);
-    updateYaml(nodes, edges);
-  };
-
-  /* This is the function to handle the change in the kind configuration. It is used to update the YAML output of the topology when the kind configuration is changed. */
-  const handleKindConfigChange = (kindIndex, field, value) => {
-    const newKinds = [...kinds];
-    newKinds[kindIndex].config[field] = value;
-    setKinds(newKinds);
-    updateYaml(nodes, edges);
-  };
-
-  /* This is the function to handle the addition of a new kind again this is in global settings. It is used to add a new kind to the topology. */
-  const handleAddKind = () => {
-    const newKind = {
-      name: kindName,
-      config: {
-        showStartupConfig: false,
-        startupConfig: '',
-        showImage: false,
-        image: '',
-        showExec: false,
-        exec: [''],
-        showBinds: false,
-        binds: ['']
-      }
-    };
-    setKinds([...kinds, newKind]);
-    setKindName('');
-    updateYaml(nodes, edges);
-  };
-
-  /* This is the function to handle the addition of a new exec in the configure kind modal. It is used to add a new exec to the kind. */
-  const handleAddExec = () => {
-    setKinds(prevKinds => {
-      const newKinds = [...prevKinds];
-      newKinds[currentKindIndex].config.exec.push("");
-      return newKinds;
-    });
-  };
-
-  /* This is the function to handle the addition of a new bind in the configure kind modal. It is used to add a new bind to the kind. */
-  const handleAddBind = () => {
-    setNodeBinds([...nodeBinds, ""]);
   };
 
   /* This is the function to handle the change in the node name. It is used to update the YAML output of the topology when the node name is changed. */
@@ -1471,11 +1123,6 @@ const App = ({ user, parentSetMode }) => {
   /* This is the function to handle the addition of a new bind node. It is used to add a new bind node to the topology. */
   const handleAddBindNode = () => {
     setNodeBinds([...nodeBinds, { source: '', target: '' }]);
-  };
-
-  /* This is the function to handle the change in the node management IP. It is used to update the YAML output of the topology when the node management IP is changed. */
-  const handleNodeMgmtIpChange = (event) => {
-    setNodeMgmtIp(event.target.value);
   };
 
   /* This is the function to handle the change in the node kind. It is used to update the YAML output of the topology when the node kind is changed. */
@@ -1535,8 +1182,6 @@ const App = ({ user, parentSetMode }) => {
           kind: nodeKind,
           image: nodeImage,
           binds: nodeBinds,
-          mgmtIp: nodeMgmtIp,
-          ipv6MgmtIp: nodeIpv6MgmtIp,
           startupConfig: nodeStartupConfig,
           customFields: nodeCustomFields,
           ...(Object.fromEntries(nodeCustomFields.filter(f => f.key && f.value).map(f => [f.key, f.value])))
@@ -1608,8 +1253,6 @@ const App = ({ user, parentSetMode }) => {
           kind: nodeKind,
           image: nodeImage,
           binds: nodeBinds,
-          mgmtIp: nodeMgmtIp,
-          ipv6MgmtIp: nodeIpv6MgmtIp,
           startupConfig: nodeStartupConfig,
           customFields: nodeCustomFields,
           ...(Object.fromEntries(nodeCustomFields.filter(f => f.key && f.value).map(f => [f.key, f.value])))
@@ -1641,24 +1284,7 @@ const App = ({ user, parentSetMode }) => {
         const col = i % 4;
         
         const finalNodeName = `${nodeNamePrefix}${nodeNum}`;
-        const nodeMgmtIpWithSuffix = nodeMgmtIp && nodeMgmtIp.trim() 
-          ? `${nodeMgmtIp.endsWith('.') ? nodeMgmtIp : `${nodeMgmtIp}.`}${nodeNum}` 
-          : '';
-        
-        // Generate IPv6 address with suffix if provided
-        let ipv6WithSuffix = '';
-        if (nodeIpv6MgmtIp && nodeIpv6MgmtIp.trim()) {
-          // Check if IPv6 address ends with :: or has a specific format to append the node number
-          if (nodeIpv6MgmtIp.endsWith('::')) {
-            ipv6WithSuffix = `${nodeIpv6MgmtIp}${nodeNum}`;
-          } else if (nodeIpv6MgmtIp.includes('::')) {
-            ipv6WithSuffix = nodeIpv6MgmtIp.replace('::', `::${nodeNum}:`);
-          } else {
-            // Just append the node number if no specific format
-            ipv6WithSuffix = `${nodeIpv6MgmtIp}${nodeNum}`;
-          }
-        }
-        
+
         const newNodeWithData = {
           ...newNode,
           id: finalNodeName, // Use the node name as ID for better YAML mapping
@@ -1672,8 +1298,6 @@ const App = ({ user, parentSetMode }) => {
             kind: nodeKind,
             image: nodeImage,
             binds: nodeBinds,
-            mgmtIp: nodeMgmtIpWithSuffix,
-            ipv6MgmtIp: ipv6WithSuffix,
             startupConfig: nodeStartupConfig,
             customFields: nodeCustomFields,
             ...(Object.fromEntries(nodeCustomFields.filter(f => f.key && f.value).map(f => [f.key, f.value])))
@@ -1699,8 +1323,6 @@ const App = ({ user, parentSetMode }) => {
     setNodeKind("ceos");
     setNodeImage("arista_ceos:4.35.1F");
     setNodeBinds([""]);
-    setNodeMgmtIp("");
-    setNodeIpv6MgmtIp("");
     setNodeModalWarning(false);
     setNodeCount(1);
     setNodeStartupConfig("");
@@ -1713,8 +1335,6 @@ const App = ({ user, parentSetMode }) => {
     setNodeName("");
     setNodeNamePrefix("");
     setNodeBinds([""]);
-    setNodeMgmtIp("");
-    setNodeIpv6MgmtIp("");
     setNodeCount(1);
     setNodeStartupConfig("");
     setShowOptionalSettings(false); // Collapse optional settings by default next time
@@ -2164,6 +1784,7 @@ const App = ({ user, parentSetMode }) => {
   };
 
   /* This is the function to handle deployment directly from a Git repository URL */
+  /* Scan the git repo for topology files, then auto-deploy or show file selection */
   const handleGitDeploy = async () => {
     if (!gitRepoUrl.trim()) {
       alert('Please enter a valid Git repository URL');
@@ -2175,11 +1796,68 @@ const App = ({ user, parentSetMode }) => {
       return;
     }
 
+    const serverIp = serverOptions[0].value;
+    setIsGitScanning(true);
+
+    try {
+      const response = await fetch(`http://${serverIp}:3001/api/containerlab/scan-git`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gitRepoUrl: gitRepoUrl,
+          username: user.username
+        })
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        alert(result.error || 'Failed to scan repository');
+        setIsGitScanning(false);
+        return;
+      }
+
+      // Store scan results
+      setGitClonedDir(result.clonedDir);
+      setGitRepoName(result.repoName);
+      setGitTopoFiles(result.topoFiles);
+
+      if (result.topoFiles.length === 1) {
+        // Single file: auto-deploy immediately
+        setShowGitDeployModal(false);
+        setIsGitScanning(false);
+        executeGitDeploy(result.clonedDir, result.topoFiles[0]);
+      } else {
+        // Multiple files: show selection modal
+        setShowGitDeployModal(false);
+        setIsGitScanning(false);
+        setSelectedTopoFile(result.topoFiles[0]);
+        setShowTopoFileSelectModal(true);
+      }
+
+    } catch (error) {
+      console.error('Error scanning Git repo:', error);
+      alert(`Error scanning repository: ${error.message}`);
+      setIsGitScanning(false);
+    }
+  };
+
+  /* Called when user clicks "Deploy Selected" in the file selection modal */
+  const handleTopoFileSelect = () => {
+    if (!selectedTopoFile) {
+      alert('Please select a topology file');
+      return;
+    }
+    setShowTopoFileSelectModal(false);
+    executeGitDeploy(gitClonedDir, selectedTopoFile);
+  };
+
+  /* Execute the actual git deployment with a specific pre-cloned dir and file */
+  const executeGitDeploy = async (clonedDir, topoFile) => {
     const repoName = gitRepoUrl.split('/').pop().replace('.git', '');
     const serverIp = serverOptions[0].value;
 
-    // Close the Git modal and open the log modal
-    setShowGitDeployModal(false);
+    // Open the log modal
     setOperationTitle(`Git Deployment: ${repoName}`);
     setOperationLogs('Starting Git repository deployment...\n');
     setShowLogModal(true);
@@ -2188,16 +1866,17 @@ const App = ({ user, parentSetMode }) => {
     try {
       setOperationLogs(prev => prev + `Repository: ${gitRepoUrl}\n`);
       setOperationLogs(prev => prev + `Server: ${serverIp}\n`);
-      setOperationLogs(prev => prev + `User: ${user.username}\n\n`);
+      setOperationLogs(prev => prev + `User: ${user.username}\n`);
+      setOperationLogs(prev => prev + `Topology file: ${topoFile}\n\n`);
 
       const response = await fetch(`http://${serverIp}:3001/api/containerlab/deploy-git`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           gitRepoUrl: gitRepoUrl,
-          username: user.username
+          username: user.username,
+          clonedDir: clonedDir,
+          selectedTopoFile: topoFile
         })
       });
 
@@ -2231,7 +1910,40 @@ const App = ({ user, parentSetMode }) => {
       setOperationLogs(prev => prev + `\nError: ${error.message}`);
     } finally {
       setGitRepoUrl('');
+      setGitClonedDir('');
+      setGitTopoFiles([]);
+      setSelectedTopoFile('');
+      setGitRepoName('');
     }
+  };
+
+  /* Cancel the file selection and clean up the cloned directory */
+  const handleCancelTopoFileSelect = async () => {
+    setShowTopoFileSelectModal(false);
+
+    // Clean up the cloned directory on the remote server
+    if (gitClonedDir) {
+      const serverIp = serverOptions[0].value;
+      try {
+        await fetch(`http://${serverIp}:3001/api/containerlab/cleanup-git-scan`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clonedDir: gitClonedDir,
+            username: user.username
+          })
+        });
+      } catch (error) {
+        console.error('Failed to cleanup cloned directory:', error);
+      }
+    }
+
+    // Reset state
+    setGitClonedDir('');
+    setGitTopoFiles([]);
+    setSelectedTopoFile('');
+    setGitRepoName('');
+    setGitRepoUrl('');
   };
 
   const onNodeContextMenu = useCallback((event, node) => {
@@ -2311,28 +2023,7 @@ const App = ({ user, parentSetMode }) => {
   /* This is the function to handle the reset of the topology. When you click on the reset button, this function is called. */
   const handleReset = () => {
     setTopologyName("");
-    setShowMgmt(false);
-    setMgmtNetwork("");
-    setIpv4Subnet("");
-    setShowIpv6(false);
-    setIpv6Subnet("");
-    setShowKind(false);
-    setKinds([{
-      name: '',
-      config: {
-        showStartupConfig: false,
-        startupConfig: '',
-        showImage: false,
-        image: '',
-        showExec: false,
-        exec: [''],
-        showBinds: false,
-        binds: ['']
-      }
-    }]);
-    setShowDefault(false);
-    setDefaultKind("");
-    
+
     setNodes([]);
     setEdges([]);
     
@@ -2348,27 +2039,6 @@ const App = ({ user, parentSetMode }) => {
       yamlOutput: '',
       editableYaml: '',
       topologyName: '',
-      showMgmt: false,
-      mgmtNetwork: '',
-      ipv4Subnet: '',
-      showIpv6: false,
-      ipv6Subnet: '',
-      showKind: false,
-      kinds: [{
-        name: '',
-        config: {
-          showStartupConfig: false,
-          startupConfig: '',
-          showImage: false,
-          image: '',
-          showExec: false,
-          exec: [''],
-          showBinds: false,
-          binds: ['']
-        }
-      }],
-      showDefault: false,
-      defaultKind: '',
       nodeInterfaces: {},
       isYamlValid: true,
       yamlParseError: '',
@@ -2476,71 +2146,6 @@ const App = ({ user, parentSetMode }) => {
     setEdgeModalWarning(false);
   };
 
-  const handleCheckboxChange = (setter, checked) => {
-    if (!validateTopologyName()) {
-      return;
-    }
-    setter(checked);
-    updateYaml(nodes, edges);
-  };
-
-  const handleKindCheckbox = (e) => {
-    // If management is checked, validate settings first
-    if (showMgmt && !validateMgmtSettings()) {
-      return;
-    }
-
-    if (!topologyName.trim()) {
-      const newName = generateRandomName();
-      setTopologyName(newName);
-      // Update the YAML with the new name
-      const updatedYaml = yamlOutput.replace(/name:.*/, `name: ${newName}`);
-      setYamlOutput(updatedYaml);
-    }
-    setShowKind(e.target.checked);
-    if (!e.target.checked) {
-      setKinds([{
-        name: '',
-        config: {
-          showStartupConfig: false,
-          startupConfig: '',
-          showImage: false,
-          image: '',
-          showExec: false,
-          exec: [''],
-          showBinds: false,
-          binds: ['']
-        }
-      }]);
-    }
-    updateYaml(nodes, edges);
-  };
-
-  const handleDefaultCheckbox = (e) => {
-    // If management is checked, validate settings first
-    if (showMgmt && !validateMgmtSettings()) {
-      return;
-    }
-
-    if (!topologyName.trim()) {
-      const newName = generateRandomName();
-      setTopologyName(newName);
-      // Update the YAML with the new name
-      const updatedYaml = yamlOutput.replace(/name:.*/, `name: ${newName}`);
-      setYamlOutput(updatedYaml);
-    }
-    setShowDefault(e.target.checked);
-    if (!e.target.checked) {
-      setDefaultKind('');
-    }
-    updateYaml(nodes, edges);
-  };
-
-  const handleIpv6Checkbox = (e) => {
-    setShowIpv6(e.target.checked);
-    updateYaml(nodes, edges);
-  };
-
   const handleModifyNode = () => {
     const nodeToModify = contextMenu.element;
     const nodeLabel = nodeToModify.data.label;
@@ -2552,8 +2157,6 @@ const App = ({ user, parentSetMode }) => {
     setNodeImage(nodeToModify.data.image || (isRouter ? 'arista_ceos:4.35.1F' : 'alpine'));
     setNodeCount(1);
     setNodeBinds(nodeToModify.data.binds || [""]);
-    setNodeMgmtIp(nodeToModify.data.mgmtIp || "");
-    setNodeIpv6MgmtIp(nodeToModify.data.ipv6MgmtIp || "");
     setNewNode(nodeToModify);
     setIsModifying(true);
     setIsModalOpen(true);
@@ -2574,18 +2177,6 @@ const App = ({ user, parentSetMode }) => {
     setIsEdgeModalOpen(true);
     setIsModifyingEdge(true);
     setContextMenu(null);
-  };
-
-  /* This is the function to handle the addition of a new kind bind. When you click on the add button in the kind modal, this function is called. */
-  const handleAddKindBind = () => {
-    const newKinds = [...kinds];
-    newKinds[currentKindIndex].config.binds.push('');
-    setKinds(newKinds);
-  };
-
-  const handleKindModalDone = () => {
-    setShowKindModal(false);
-    updateYaml(nodes, edges);
   };
 
   /* This is the function to initialize the node interfaces from the YAML. It is used to initialize the node interfaces when a new node is created. */
@@ -2646,7 +2237,7 @@ const App = ({ user, parentSetMode }) => {
           } else {
             // For backward compatibility, extract from root level
             customFields = Object.entries(nodeData)
-              .filter(([k]) => !['kind', 'image', 'binds', 'mgmt-ipv4', 'startup-config', 'env'].includes(k))
+              .filter(([k]) => !['kind', 'image', 'binds', 'mgmt-ipv4', 'mgmt-ipv6', 'startup-config', 'env'].includes(k))
               .map(([key, value]) => ({ key, value: String(value) }));
           }
           
@@ -2663,8 +2254,6 @@ const App = ({ user, parentSetMode }) => {
               kind: nodeData.kind || '',
               image: nodeData.image || '',
               binds: nodeData.binds || [],
-              mgmtIp: nodeData['mgmt-ipv4'] || '',
-              ipv6MgmtIp: nodeData['mgmt-ipv6'] || '',
               startupConfig: nodeData['startup-config'] || '',
               customFields,
             }
@@ -2699,87 +2288,13 @@ const App = ({ user, parentSetMode }) => {
           setNodeCustomFields(newNodes[0].data.customFields.length > 0 ? newNodes[0].data.customFields : [{ key: '', value: '' }]);
         }
         
-        // Check for management settings in the YAML
-        if (parsedYaml.mgmt) {
-          setShowMgmt(true);
-          setMgmtNetwork(parsedYaml.mgmt.network || parsedYaml.mgmt['network'] || '');
-          setIpv4Subnet(parsedYaml.mgmt.ipv4_subnet || parsedYaml.mgmt['ipv4-subnet'] || '');
-          
-          if (parsedYaml.mgmt.ipv6_subnet || parsedYaml.mgmt['ipv6-subnet']) {
-            setShowIpv6(true);
-            setIpv6Subnet(parsedYaml.mgmt.ipv6_subnet || parsedYaml.mgmt['ipv6-subnet'] || '');
-          }
-        }
-        
-        // Check for kinds section in the YAML
-        if (parsedYaml.topology.kinds) {
-          setShowKind(true);
-          
-          const newKinds = Object.entries(parsedYaml.topology.kinds).map(([kindName, kindConfig]) => ({
-            name: kindName,
-            config: {
-              showStartupConfig: !!kindConfig['startup-config'],
-              startupConfig: kindConfig['startup-config'] || '',
-              showImage: !!kindConfig.image,
-              image: kindConfig.image || '',
-              showExec: !!(kindConfig.exec && kindConfig.exec.length),
-              exec: kindConfig.exec || [''],
-              showBinds: !!(kindConfig.binds && kindConfig.binds.length),
-              binds: kindConfig.binds || ['']
-            }
-          }));
-          
-          if (newKinds.length > 0) {
-            setKinds(newKinds);
-          }
-        }
-        
-        // Check for defaults in the YAML
-        if (parsedYaml.topology.defaults) {
-          setShowDefault(true);
-          setDefaultKind(parsedYaml.topology.defaults.kind || '');
-        }
-        
-        // Update context with new data including all settings
+        // Update context with new data
         updateTopologyState({
           nodes: newNodes,
           edges: newEdges,
           yamlOutput: newYaml,
           editableYaml: newYaml,
           topologyName: parsedYaml.name || '',
-          showMgmt: !!parsedYaml.mgmt,
-          mgmtNetwork: parsedYaml.mgmt?.network || parsedYaml.mgmt?.['network'] || '',
-          ipv4Subnet: parsedYaml.mgmt?.ipv4_subnet || parsedYaml.mgmt?.['ipv4-subnet'] || '',
-          showIpv6: !!(parsedYaml.mgmt?.ipv6_subnet || parsedYaml.mgmt?.['ipv6-subnet']),
-          ipv6Subnet: parsedYaml.mgmt?.ipv6_subnet || parsedYaml.mgmt?.['ipv6-subnet'] || '',
-          showKind: !!parsedYaml.topology?.kinds,
-          kinds: parsedYaml.topology?.kinds ? Object.entries(parsedYaml.topology.kinds).map(([kindName, kindConfig]) => ({
-            name: kindName,
-            config: {
-              showStartupConfig: !!kindConfig['startup-config'],
-              startupConfig: kindConfig['startup-config'] || '',
-              showImage: !!kindConfig.image,
-              image: kindConfig.image || '',
-              showExec: !!(kindConfig.exec && kindConfig.exec.length),
-              exec: kindConfig.exec || [''],
-              showBinds: !!(kindConfig.binds && kindConfig.binds.length),
-              binds: kindConfig.binds || ['']
-            }
-          })) : [{
-            name: '',
-            config: {
-              showStartupConfig: false,
-              startupConfig: '',
-              showImage: false,
-              image: '',
-              showExec: false,
-              exec: [''],
-              showBinds: false,
-              binds: ['']
-            }
-          }],
-          showDefault: !!parsedYaml.topology?.defaults,
-          defaultKind: parsedYaml.topology?.defaults?.kind || '',
           isYamlValid: true,
           yamlParseError: '',
           nodeInterfaces: { ...nodeInterfaces }
@@ -2866,80 +2381,6 @@ const App = ({ user, parentSetMode }) => {
     // initializeNodeInterfacesFromYaml is now called inside handleYamlChange
   };
 
-  /* This is the function to handle the SSH port forwarding checkbox. When you click on the SSH port forwarding checkbox, this function is called. */
-  const handleSshPortForwardingCheckbox = (e) => {
-    // If management is checked, validate settings first
-    if (showMgmt && !validateMgmtSettings()) {
-      return;
-    }
-
-    if (!topologyName.trim()) {
-      const newName = generateRandomName();
-      setTopologyName(newName);
-      // Update the YAML with the new name
-      const updatedYaml = yamlOutput.replace(/name:.*/, `name: ${newName}`);
-      setYamlOutput(updatedYaml);
-    }
-
-    const hasNodes = nodes.length > 0;
-
-    if (!hasNodes && e.target.checked) {
-      setErrorMessage('There are no nodes in the topology. Please create nodes first.');
-      setShowErrorModal(true);
-      return;
-    }
-
-    setShowSshPortForwarding(e.target.checked);
-    updateYaml(nodes, edges);
-  };
-
-  const handleSshServerChange = (e) => {
-    setSelectedSshServer(e.target.value);
-  };
-
-  /* This is the function to handle the submission of the SSH port forwarding. When you click on the submit button after selecting the server in the SSH port forwarding modal, this function is called. */
-  const handleSshPortForwardingSubmit = async () => {
-    try {
-      setIsLoadingPorts(true);
-      const response = await fetch(`http://${selectedSshServer}:3001/api/ports/free?serverIp=${selectedSshServer}&username=${encodeURIComponent(user?.username || '')}`);
-      const data = await response.json();
-      
-      if (data.success && data.freePorts.length > 0) {
-        setFreePorts(data.freePorts);
-        
-        const updatedYaml = yaml.load(yamlOutput);
-        let portIndex = 0;
-        
-        Object.keys(updatedYaml.topology.nodes).forEach(nodeName => {
-          if (portIndex < data.freePorts.length) {
-            const node = updatedYaml.topology.nodes[nodeName];
-            node.ports = [`${data.freePorts[portIndex]}:22/tcp`];
-            portIndex++;
-          }
-        });
-        
-        const newYamlOutput = yaml.dump(updatedYaml, {
-          lineWidth: -1,
-          quotingType: '"',
-          forceQuotes: true
-        });
-        setYamlOutput(newYamlOutput);
-        setEditableYaml(newYamlOutput);
-        
-        setOperationTitle('SSH Port Forwarding');
-        setOperationLogs('Successfully added SSH port forwarding to all nodes');
-        setShowLogModal(true);
-      } else {
-        throw new Error('No free ports available');
-      }
-    } catch (error) {
-      setErrorMessage(`Failed to get free ports: ${error.message}`);
-      setShowErrorModal(true);
-    } finally {
-      setIsLoadingPorts(false);
-    }
-  };
-  
   /* This is the function to handle the save of the topology. When you click on the save button, this function is called. This will open the save modal. */
   const handleSave = () => {
     setModalMode('save');
@@ -3064,17 +2505,6 @@ const App = ({ user, parentSetMode }) => {
     return highestNodeNum + 1;
   };
 
-  /* This is the function to handle the change in the management network. When you change the management network, this function is called. */
-  const handleMgmtNetworkChange = (event) => {
-    const newValue = event.target.value;
-    setMgmtNetwork(newValue);
-    
-    // Clear warning if this is now valid
-    if (showMgmt && newValue.trim() && ipv4Subnet.trim()) {
-      setMgmtWarning(false);
-    }
-  };
-
   /* This is the function to handle the submission of the modify node modal. When you click on the submit button in the modify node modal, this function is called. */
   const handleModifyNodeSubmit = () => {
     if (!nodeKind.trim()) {
@@ -3098,8 +2528,6 @@ const App = ({ user, parentSetMode }) => {
         kind: nodeKind,
         image: nodeImage,
         binds: nodeBinds,
-        mgmtIp: nodeMgmtIp,
-        ipv6MgmtIp: nodeIpv6MgmtIp,
         startupConfig: nodeStartupConfig,
         customFields: nodeCustomFields,// Add custom fields
         ...(Object.fromEntries(nodeCustomFields.filter(f => f.key && f.value).map(f => [f.key, f.value])))
@@ -3162,21 +2590,6 @@ const App = ({ user, parentSetMode }) => {
     const character = randomNames.cartoonCharacters[Math.floor(Math.random() * randomNames.cartoonCharacters.length)];
     const place = randomNames.irishPlaces[Math.floor(Math.random() * randomNames.irishPlaces.length)];
     return `${user?.username || ''}-${character}-${place}`.toLowerCase();
-  };
-
-  const handleBrowseKindStartupConfig = () => {
-    setShowFileManagerForKindStartupConfig(true);
-  };
-
-  const handleFileManagerKindStartupConfigSelect = (content, selectedPath) => {
-    // We just need the file path, not the content
-    if (selectedPath && selectedPath.path) {
-      console.log('Selected Kind startup config path:', selectedPath.path);
-      const newKinds = [...kinds];
-      newKinds[currentKindIndex].config.startupConfig = selectedPath.path;
-      setKinds(newKinds);
-    }
-    setShowFileManagerForKindStartupConfig(false);
   };
 
   const handleFileManagerBindSelect = (content, selectedFile) => {
@@ -3452,36 +2865,18 @@ const App = ({ user, parentSetMode }) => {
       yamlOutput,
       editableYaml,
       topologyName,
-      showMgmt,
-      mgmtNetwork,
-      ipv4Subnet,
-      showIpv6,
-      ipv6Subnet,
-      showKind,
-      kinds,
-      showDefault,
-      defaultKind,
       nodeInterfaces,
       isYamlValid,
       yamlParseError
     });
   }, [
-    nodes, 
-    edges, 
-    yamlOutput, 
-    editableYaml, 
-    topologyName, 
-    showMgmt, 
-    mgmtNetwork, 
-    ipv4Subnet, 
-    showIpv6, 
-    ipv6Subnet, 
-    showKind, 
-    kinds, 
-    showDefault, 
-    defaultKind, 
-    nodeInterfaces, 
-    isYamlValid, 
+    nodes,
+    edges,
+    yamlOutput,
+    editableYaml,
+    topologyName,
+    nodeInterfaces,
+    isYamlValid,
     yamlParseError
   ]);
 
@@ -3519,199 +2914,6 @@ const App = ({ user, parentSetMode }) => {
                   />
                 </div>
                 <Sidebar onNodeClick={onNodeClick} onGenerateClick={onGenerateClick} />
-
-                <h3 
-                  className="settings-heading" 
-                  onClick={() => setShowGlobalSettings(!showGlobalSettings)}
-                  style={{ 
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    userSelect: 'none'
-                  }}
-                >
-                  {showGlobalSettings ? '▼' : '▶'} Optional Settings
-                  <span className="info-icon">ⓘ</span>
-                </h3>
-
-                {showGlobalSettings && (
-                  <>
-                    <div className="checkbox-group">
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={showMgmt}
-                          onChange={handleMgmtCheckbox}
-                        />
-                        Add Management
-                      </label>
-                    </div>
-
-                    {showMgmt && (
-                      <div className="management-section">
-                        {mgmtWarning && (
-                          <div className="warning-message">
-                            Both Network Name and IPv4 Subnet are required
-                          </div>
-                        )}
-                        <div className="input-group">
-                          <label>Network Name:</label>
-                          <input
-                            type="text"
-                            value={mgmtNetwork}
-                            onChange={handleMgmtNetworkChange}
-                            className={mgmtWarning && !mgmtNetwork.trim() ? 'input-error' : ''}
-                            placeholder="Required field"
-                          />
-                        </div>
-                        <div className="input-group">
-                          <label>IPv4 Subnet:</label>
-                          <input
-                            type="text"
-                            value={ipv4Subnet}
-                            onChange={handleIpv4SubnetChange}
-                            className={mgmtWarning && !ipv4Subnet.trim() ? 'input-error' : ''}
-                            placeholder="Required field (e.g., 192.168.122.0/24)"
-                          />
-                        </div>
-                        {ipv4Subnet && mgmtNetwork && nodes.length > 0 && (
-                          <div className="input-group">
-                            <button
-                              className="reassign-button"
-                              onClick={() => autoAssignMgmtIPs(ipv4Subnet)}
-                            >
-                              Re-assign Management IPs
-                            </button>
-                            <span className="helper-text">
-                              Will assign IPs like {ipv4Subnet.split('/')[0].split('.').slice(0, 3).join('.')}.2 through {ipv4Subnet.split('/')[0].split('.').slice(0, 3).join('.')}.{Math.min(nodes.length + 1, 254)}
-                            </span>
-                          </div>
-                        )}
-                        <div className="checkbox-group">
-                          <label>
-                            <input
-                              type="checkbox"
-                              checked={showIpv6}
-                              onChange={(e) => setShowIpv6(e.target.checked)}
-                            />
-                            Add IPv6 Subnet
-                          </label>
-                        </div>
-                        {showIpv6 && (
-                          <div className="input-group">
-                            <label>IPv6 Subnet:</label>
-                            <input
-                              type="text"
-                              value={ipv6Subnet}
-                              onChange={handleIpv6SubnetChange}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div className="checkbox-group">
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={showKind}
-                          onChange={handleKindCheckbox}
-                        />
-                        Add Kinds
-                      </label>
-                    </div>
-                    {showKind && (
-                      <div className="kinds-section">
-                        {kinds.map((kind, index) => (
-                          <div key={index} className="kind-input-group">
-                            <label htmlFor={`kind-name-${index}`}>Kind Name</label>
-                            <select
-                              id={`kind-name-${index}`}
-                              value={kind.name}
-                              onChange={(e) => handleKindNameChange(index, e.target.value)}
-                            >
-                              <option value="">Select a kind</option>
-                              {kindOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                            <button onClick={() => {
-                              setShowKindModal(true);
-                              setCurrentKindIndex(index);
-                            }}>Configure</button>
-                          </div>
-                        ))}
-                        <button onClick={handleAddKind}>Add More Kinds</button>
-                      </div>
-                    )}
-                    <div className="checkbox-group">
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={showDefault}
-                          onChange={handleDefaultCheckbox}
-                        />
-                        Add Default
-                      </label>
-                    </div>
-                    {showDefault && (
-                      <div className="default-input-group">
-                        <label htmlFor="default-kind">Default Kind:</label>
-                        <select
-                          id="default-kind"
-                          value={defaultKind}
-                          onChange={handleDefaultKindChange}
-                          className="image-select"
-                        >
-                          <option value="">Select a kind</option>
-                          {kindOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                    <div className="checkbox-group">
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={showSshPortForwarding}
-                          onChange={handleSshPortForwardingCheckbox}
-                        />
-                        Add SSH Port Forwarding
-                      </label>
-                    </div>
-                    {showSshPortForwarding && (
-                      <div className="ssh-forwarding-section">
-                        <div className="input-group">
-                          <label>Select Server:</label>
-                          <select
-                            value={selectedSshServer}
-                            onChange={handleSshServerChange}
-                            className="image-select"
-                          >
-                            <option value="">Select a server</option>
-                            {serverOptions.map((server) => (
-                              <option key={server.value} value={server.value}>
-                                {server.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <button 
-                          className="submit-button"
-                          onClick={handleSshPortForwardingSubmit}
-                          disabled={!selectedSshServer || isLoadingPorts}
-                        >
-                          {isLoadingPorts ? 'Loading Ports...' : 'Submit'}
-                        </button>
-                      </div>
-                    )}
-                  </>
-                )}
 
                 <button className="reset-button" onClick={handleReset}>
                   🧹 Clear
@@ -3920,20 +3122,9 @@ const App = ({ user, parentSetMode }) => {
                     ))}
                   </select>
                 </div>
-                {showMgmt && (
-                  <div className="input-group">
-                    <label>Management IP:</label>
-                    <input
-                      type="text"
-                      value={nodeMgmtIp}
-                      placeholder="e.g., 192.168.123.45"
-                      onChange={handleNodeMgmtIpChange}
-                    />
-                  </div>
-                )}
                 {/* Optional settings collapsible section */}
                 <div>
-                  <h3 
+                  <h3
                     className="settings-heading"
                     onClick={() => setShowOptionalSettings(!showOptionalSettings)}
                     style={{ cursor: 'pointer' }}
@@ -3942,24 +3133,6 @@ const App = ({ user, parentSetMode }) => {
                   </h3>
                   {showOptionalSettings && (
                     <div>
-                      <div className="input-group">
-                        <label>Management IP (IPv4):</label>
-                        <input
-                          type="text"
-                          value={nodeMgmtIp}
-                          placeholder="e.g., 172.100.100.11"
-                          onChange={handleNodeMgmtIpChange}
-                        />
-                      </div>
-                      <div className="input-group">
-                        <label>Management IP (IPv6):</label>
-                        <input
-                          type="text"
-                          value={nodeIpv6MgmtIp || ""}
-                          placeholder="e.g., 3fff:172:100:100::11"
-                          onChange={(e) => setNodeIpv6MgmtIp(e.target.value)}
-                        />
-                      </div>
                       <div className="input-group">
                         <label>Binds:</label>
                         {nodeBinds.map((bind, index) => (
@@ -4074,132 +3247,6 @@ const App = ({ user, parentSetMode }) => {
           </div>
         )}
         
-        {showKindModal && (
-          <div className="modal">
-            <div className="modal-content kind-config-modal">
-              <h2>Configure Kind: {kinds[currentKindIndex].name}</h2>
-              
-              <div className="kind-config-item">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={kinds[currentKindIndex].config.showStartupConfig}
-                    onChange={(e) => handleKindConfigChange(currentKindIndex, 'showStartupConfig', e.target.checked)}
-                  />
-                  Startup Config
-                </label>
-                {kinds[currentKindIndex].config.showStartupConfig && (
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <input
-                      type="text"
-                      value={kinds[currentKindIndex].config.startupConfig}
-                      onChange={(e) => handleKindConfigChange(currentKindIndex, 'startupConfig', e.target.value)}
-                      placeholder="Path to startup config"
-                      style={{ flex: 1 }}
-                    />
-                    <button 
-                      type="button" 
-                      onClick={handleBrowseKindStartupConfig}
-                      className="browse-button"
-                    >
-                      Browse
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="kind-config-item">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={kinds[currentKindIndex].config.showImage}
-                    onChange={(e) => handleKindConfigChange(currentKindIndex, 'showImage', e.target.checked)}
-                  />
-                  Image
-                </label>
-                {kinds[currentKindIndex].config.showImage && (
-                  <select
-                    value={kinds[currentKindIndex].config.image}
-                    onChange={(e) => handleKindConfigChange(currentKindIndex, 'image', e.target.value)}
-                    className="image-select"
-                  >
-                    <option value="">Select an image</option>
-                    {imageOptions
-                      .filter(option => option.kind === kinds[currentKindIndex].name)
-                      .map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              <div className="kind-config-item">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={kinds[currentKindIndex].config.showExec}
-                    onChange={(e) => handleKindConfigChange(currentKindIndex, 'showExec', e.target.checked)}
-                  />
-                  Exec Commands
-                </label>
-                {kinds[currentKindIndex].config.showExec && (
-                  <div className="exec-commands">
-                    {kinds[currentKindIndex].config.exec.map((cmd, index) => (
-                      <input
-                        key={index}
-                        type="text"
-                        value={cmd}
-                        onChange={(e) => {
-                          const newExec = [...kinds[currentKindIndex].config.exec];
-                          newExec[index] = e.target.value;
-                          handleKindConfigChange(currentKindIndex, 'exec', newExec);
-                        }}
-                        placeholder="Enter exec command"
-                      />
-                    ))}
-                    <button onClick={handleAddExec}>Add Exec Command</button>
-                  </div>
-                )}
-              </div>
-
-              <div className="kind-config-item">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={kinds[currentKindIndex].config.showBinds}
-                    onChange={(e) => handleKindConfigChange(currentKindIndex, 'showBinds', e.target.checked)}
-                  />
-                  Binds
-                </label>
-                {kinds[currentKindIndex].config.showBinds && (
-                  <div className="binds">
-                    {kinds[currentKindIndex].config.binds.map((bind, index) => (
-                      <input
-                        key={index}
-                        type="text"
-                        value={bind}
-                        onChange={(e) => {
-                          const newBinds = [...kinds[currentKindIndex].config.binds];
-                          newBinds[index] = e.target.value;
-                          handleKindConfigChange(currentKindIndex, 'binds', newBinds);
-                        }}
-                        placeholder="Enter bind path"
-                      />
-                    ))}
-                    <button onClick={handleAddKindBind}>Add Bind</button>
-                  </div>
-                )}
-              </div>
-
-              <div className="actions">
-                <button onClick={() => setShowKindModal(false)}>Cancel</button>
-                <button onClick={handleKindModalDone}>Done</button>
-              </div>
-            </div>
-          </div>
-        )}
         {contextMenu && (
           <div
             className="context-menu"
@@ -4488,30 +3535,112 @@ const App = ({ user, parentSetMode }) => {
               <div className="actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                 <button
                   onClick={handleGitDeploy}
-                  disabled={!gitRepoUrl.trim()}
+                  disabled={!gitRepoUrl.trim() || isGitScanning}
                   style={{
-                    backgroundColor: gitRepoUrl.trim() ? '#16a34a' : '#cccccc',
+                    backgroundColor: (!gitRepoUrl.trim() || isGitScanning) ? '#cccccc' : '#16a34a',
                     color: 'white',
                     padding: '8px 20px',
                     border: 'none',
                     borderRadius: '4px',
-                    cursor: gitRepoUrl.trim() ? 'pointer' : 'not-allowed',
-                    opacity: gitRepoUrl.trim() ? 1 : 0.6
+                    cursor: (!gitRepoUrl.trim() || isGitScanning) ? 'not-allowed' : 'pointer',
+                    opacity: (!gitRepoUrl.trim() || isGitScanning) ? 0.6 : 1
                   }}
                 >
-                  Deploy
+                  {isGitScanning ? 'Scanning Repository...' : 'Deploy'}
                 </button>
                 <button
                   onClick={() => {
                     setShowGitDeployModal(false);
                     setGitRepoUrl('');
                   }}
+                  disabled={isGitScanning}
                   style={{
                     padding: '8px 20px',
-                    border: '1px solid #ccc',
+                    border: '1px solid #dc2626',
+                    borderRadius: '4px',
+                    cursor: isGitScanning ? 'not-allowed' : 'pointer',
+                    backgroundColor: '#dc2626',
+                    color: 'white',
+                    opacity: isGitScanning ? 0.6 : 1
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Topology File Selection Modal */}
+        {showTopoFileSelectModal && (
+          <div className="modal">
+            <div className="modal-content" style={{ width: '550px' }}>
+              <h2>Select Topology File</h2>
+              <div className="form-content">
+                <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
+                  Multiple topology files were found in the repository. Please select the file you want to deploy:
+                </p>
+                <div style={{
+                  maxHeight: '300px',
+                  overflowY: 'auto',
+                  border: '1px solid #e0e0e0',
+                  borderRadius: '4px'
+                }}>
+                  {gitTopoFiles.map((file, index) => (
+                    <div
+                      key={index}
+                      onClick={() => setSelectedTopoFile(file)}
+                      style={{
+                        padding: '10px 15px',
+                        cursor: 'pointer',
+                        backgroundColor: selectedTopoFile === file
+                          ? '#e8f5e9'
+                          : index % 2 === 0 ? '#ffffff' : '#fafafa',
+                        borderBottom: index < gitTopoFiles.length - 1 ? '1px solid #f0f0f0' : 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        transition: 'background-color 0.15s'
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="topoFile"
+                        checked={selectedTopoFile === file}
+                        onChange={() => setSelectedTopoFile(file)}
+                        style={{ margin: 0 }}
+                      />
+                      <span style={{ fontFamily: 'monospace', fontSize: '13px' }}>
+                        {file}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="actions" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                <button
+                  onClick={handleTopoFileSelect}
+                  disabled={!selectedTopoFile}
+                  style={{
+                    backgroundColor: selectedTopoFile ? '#16a34a' : '#cccccc',
+                    color: 'white',
+                    padding: '8px 20px',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: selectedTopoFile ? 'pointer' : 'not-allowed',
+                    opacity: selectedTopoFile ? 1 : 0.6
+                  }}
+                >
+                  Deploy Selected
+                </button>
+                <button
+                  onClick={handleCancelTopoFileSelect}
+                  style={{
+                    padding: '8px 20px',
+                    border: '1px solid #dc2626',
                     borderRadius: '4px',
                     cursor: 'pointer',
-                    backgroundColor: 'white'
+                    backgroundColor: '#dc2626',
+                    color: 'white'
                   }}
                 >
                   Cancel
@@ -4556,14 +3685,6 @@ const App = ({ user, parentSetMode }) => {
           isOpen={showFileManagerForStartupConfig}
           onClose={() => setShowFileManagerForStartupConfig(false)}
           onImport={handleFileManagerStartupConfigSelect}
-          username={user.username}
-          mode="select"
-        />
-        {/* FileManager Modal for Kind Startup Config */}
-        <FileManagerModal
-          isOpen={showFileManagerForKindStartupConfig}
-          onClose={() => setShowFileManagerForKindStartupConfig(false)}
-          onImport={handleFileManagerKindStartupConfigSelect}
           username={user.username}
           mode="select"
         />

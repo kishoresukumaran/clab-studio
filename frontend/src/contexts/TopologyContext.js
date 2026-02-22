@@ -14,27 +14,6 @@ export const TopologyProvider = ({ children }) => {
     yamlOutput: '',
     editableYaml: '',
     topologyName: '',
-    showMgmt: false,
-    mgmtNetwork: '',
-    ipv4Subnet: '',
-    showIpv6: false,
-    ipv6Subnet: '',
-    showKind: false,
-    kinds: [{
-      name: '',
-      config: {
-        showStartupConfig: false,
-        startupConfig: '',
-        showImage: false,
-        image: '',
-        showExec: false,
-        exec: [''],
-        showBinds: false,
-        binds: ['']
-      }
-    }],
-    showDefault: false,
-    defaultKind: '',
     nodeInterfaces: {},
     isYamlValid: true,
     yamlParseError: '',

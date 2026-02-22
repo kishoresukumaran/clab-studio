@@ -1315,10 +1315,145 @@ app.post('/api/git/clone', async (req, res) => {
   }
 });
 
+// Git repository scan endpoint - clones repo and lists all topology YAML files
+app.post('/api/containerlab/scan-git', async (req, res) => {
+    try {
+        const { gitRepoUrl, username } = req.body;
+
+        if (!gitRepoUrl || !username) {
+            return res.status(400).json({
+                success: false,
+                error: 'Git repository URL and username are required'
+            });
+        }
+
+        const serverIp = config.serverIp;
+        const repoName = gitRepoUrl.split('/').pop().replace('.git', '');
+        const deployTimestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T').join('-').split('.')[0];
+        const uniqueRepoName = `${repoName}-${deployTimestamp}`;
+        const userDir = `${config.baseTopologyDirectory}/${username}/${uniqueRepoName}`;
+
+        const ssh = new NodeSSH();
+
+        try {
+            await ssh.connect({
+                ...getSshConfig(username),
+                host: serverIp,
+                readyTimeout: 10000
+            });
+        } catch (error) {
+            return res.status(500).json({
+                success: false,
+                error: `Failed to connect to server: ${error.message}`
+            });
+        }
+
+        try {
+            // Create directories
+            const parentDir = `${config.baseTopologyDirectory}/${username}`;
+            await ssh.execCommand(`mkdir -p ${parentDir}`, { cwd: '/' });
+            await ssh.execCommand(`mkdir -p ${userDir}`, { cwd: '/' });
+
+            // Clone the repository
+            const cloneResult = await ssh.execCommand(`git clone ${gitRepoUrl} .`, { cwd: userDir });
+
+            if (cloneResult.code !== 0) {
+                // Cleanup on clone failure
+                await ssh.execCommand(`rm -rf ${userDir}`, { cwd: '/' });
+                return res.status(500).json({
+                    success: false,
+                    error: `Failed to clone repository: ${cloneResult.stderr}`
+                });
+            }
+
+            // Find ALL yaml/yml files
+            const findResult = await ssh.execCommand(
+                `find . -maxdepth 3 -type f \\( -name "*.yaml" -o -name "*.yml" \\) | sort`,
+                { cwd: userDir }
+            );
+
+            const allFiles = findResult.stdout.trim().split('\n').filter(f => f.length > 0);
+
+            if (allFiles.length === 0) {
+                return res.json({
+                    success: false,
+                    error: 'No topology YAML files found in the repository',
+                    clonedDir: userDir
+                });
+            }
+
+            return res.json({
+                success: true,
+                clonedDir: userDir,
+                repoName: repoName,
+                topoFiles: allFiles
+            });
+
+        } catch (error) {
+            console.error('Git scan error:', error);
+            return res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        } finally {
+            ssh.dispose();
+        }
+
+    } catch (error) {
+        console.error('Git scan endpoint error:', error);
+        return res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Cleanup endpoint for removing cloned git directories when user cancels
+app.post('/api/containerlab/cleanup-git-scan', async (req, res) => {
+    try {
+        const { clonedDir, username } = req.body;
+
+        if (!clonedDir || !username) {
+            return res.status(400).json({
+                success: false,
+                error: 'clonedDir and username are required'
+            });
+        }
+
+        // Security: validate the clonedDir is within the expected base path
+        const expectedPrefix = `${config.baseTopologyDirectory}/${username}/`;
+        if (!clonedDir.startsWith(expectedPrefix)) {
+            return res.status(403).json({
+                success: false,
+                error: 'Invalid directory path'
+            });
+        }
+
+        const ssh = new NodeSSH();
+        await ssh.connect({
+            ...getSshConfig(username),
+            host: config.serverIp,
+            readyTimeout: 10000
+        });
+
+        await ssh.execCommand(`rm -rf "${clonedDir}"`, { cwd: '/' });
+        ssh.dispose();
+
+        return res.json({ success: true });
+
+    } catch (error) {
+        console.error('Cleanup error:', error);
+        return res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 // Git repository deployment endpoint - clones repo, finds YAML, renames topology, deploys
 app.post('/api/containerlab/deploy-git', async (req, res) => {
     try {
-        const { gitRepoUrl, username } = req.body;
+        const { gitRepoUrl, username, clonedDir, selectedTopoFile } = req.body;
 
         if (!gitRepoUrl || !username) {
             return res.status(400).json({
@@ -1336,17 +1471,30 @@ app.post('/api/containerlab/deploy-git', async (req, res) => {
             res.write(`[${timestamp}] ${message}\n`);
         };
 
-        // Generate unique deployment name
         const repoName = gitRepoUrl.split('/').pop().replace('.git', '');
-        const deployTimestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T').join('-').split('.')[0];
-        const uniqueRepoName = `${repoName}-${deployTimestamp}`;
-        const userDir = `${config.baseTopologyDirectory}/${username}/${uniqueRepoName}`;
+        const usePreCloned = clonedDir && selectedTopoFile;
 
-        log(`Git Repository Deployment: ${repoName}`);
-        log(`Unique deployment name: ${uniqueRepoName}`);
-        log(`Repository: ${gitRepoUrl}`);
-        log(`Target directory: ${userDir}`);
-        log(`Target server: ${serverIp}`);
+        let userDir;
+        let yamlFile;
+        const deployTimestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T').join('-').split('.')[0];
+
+        if (usePreCloned) {
+            userDir = clonedDir;
+            yamlFile = selectedTopoFile;
+            log(`Git Repository Deployment: ${repoName}`);
+            log(`Using pre-cloned directory: ${userDir}`);
+            log(`Selected topology file: ${yamlFile}`);
+            log(`Target server: ${serverIp}`);
+        } else {
+            const uniqueRepoName = `${repoName}-${deployTimestamp}`;
+            userDir = `${config.baseTopologyDirectory}/${username}/${uniqueRepoName}`;
+
+            log(`Git Repository Deployment: ${repoName}`);
+            log(`Unique deployment name: ${uniqueRepoName}`);
+            log(`Repository: ${gitRepoUrl}`);
+            log(`Target directory: ${userDir}`);
+            log(`Target server: ${serverIp}`);
+        }
 
         const ssh = new NodeSSH();
 
@@ -1365,43 +1513,46 @@ app.post('/api/containerlab/deploy-git', async (req, res) => {
         }
 
         try {
-            // Ensure parent directory exists
-            const parentDir = `${config.baseTopologyDirectory}/${username}`;
-            await ssh.execCommand(`mkdir -p ${parentDir}`, { cwd: '/' });
-            await ssh.execCommand(`mkdir -p ${userDir}`, { cwd: '/' });
-            log(`Created deployment directory: ${userDir}`);
+            if (!usePreCloned) {
+                // Ensure parent directory exists
+                const parentDir = `${config.baseTopologyDirectory}/${username}`;
+                await ssh.execCommand(`mkdir -p ${parentDir}`, { cwd: '/' });
+                await ssh.execCommand(`mkdir -p ${userDir}`, { cwd: '/' });
+                log(`Created deployment directory: ${userDir}`);
 
-            // Step 1: Clone the git repository
-            log(`Cloning repository ${gitRepoUrl}...`);
-            const cloneResult = await ssh.execCommand(`git clone ${gitRepoUrl} .`, {
-                cwd: userDir,
-                onStdout: (chunk) => {
-                    log(`git: ${chunk.toString().trim()}`);
-                },
-                onStderr: (chunk) => {
-                    const stderr = chunk.toString().trim();
-                    if (stderr) log(`git: ${stderr}`);
+                // Step 1: Clone the git repository
+                log(`Cloning repository ${gitRepoUrl}...`);
+                const cloneResult = await ssh.execCommand(`git clone ${gitRepoUrl} .`, {
+                    cwd: userDir,
+                    onStdout: (chunk) => {
+                        log(`git: ${chunk.toString().trim()}`);
+                    },
+                    onStderr: (chunk) => {
+                        const stderr = chunk.toString().trim();
+                        if (stderr) log(`git: ${stderr}`);
+                    }
+                });
+
+                if (cloneResult.code !== 0) {
+                    throw new Error(`Failed to clone repository: ${cloneResult.stderr}`);
                 }
-            });
+                log('Repository cloned successfully');
 
-            if (cloneResult.code !== 0) {
-                throw new Error(`Failed to clone repository: ${cloneResult.stderr}`);
-            }
-            log('Repository cloned successfully');
+                // Step 2: Find YAML file
+                log('Looking for containerlab YAML files...');
+                const findResult = await ssh.execCommand(
+                    `find . -maxdepth 2 -name "*.yaml" -o -name "*.yml" | head -1`,
+                    { cwd: userDir }
+                );
 
-            // Step 2: Find YAML file
-            log('Looking for containerlab YAML files...');
-            const findResult = await ssh.execCommand(
-                `find . -maxdepth 2 -name "*.yaml" -o -name "*.yml" | head -1`,
-                { cwd: userDir }
-            );
+                if (findResult.code !== 0 || !findResult.stdout.trim()) {
+                    throw new Error('No YAML files found in the repository');
+                }
 
-            if (findResult.code !== 0 || !findResult.stdout.trim()) {
-                throw new Error('No YAML files found in the repository');
+                yamlFile = findResult.stdout.trim();
             }
 
-            const yamlFile = findResult.stdout.trim();
-            log(`Found YAML file: ${yamlFile}`);
+            log(`Using topology file: ${yamlFile}`);
 
             // Step 3: Modify topology name for uniqueness
             log('Modifying topology name for unique deployment...');
