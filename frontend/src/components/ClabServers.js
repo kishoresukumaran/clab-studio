@@ -10,7 +10,7 @@
  * containerlab topologies across multiple servers.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Loader2, Server } from 'lucide-react';
 import LogModal from './LogModal';
 import SshModal from './SshModal';
@@ -33,6 +33,19 @@ const ClabServers = ({ user }) => {
   const [showTopologyModal, setShowTopologyModal] = useState(false);
   const [topologyViewData, setTopologyViewData] = useState(null);
   const [topologyViewName, setTopologyViewName] = useState('');
+  const [openActionsDropdown, setOpenActionsDropdown] = useState(null);
+  const actionsDropdownRef = useRef(null);
+
+  const closeActionsDropdown = useCallback((e) => {
+    if (actionsDropdownRef.current && !actionsDropdownRef.current.contains(e.target)) {
+      setOpenActionsDropdown(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener('mousedown', closeActionsDropdown);
+    return () => document.removeEventListener('mousedown', closeActionsDropdown);
+  }, [closeActionsDropdown]);
 
   /**
    * List of containerlab servers available in the environment.
@@ -713,192 +726,305 @@ const ClabServers = ({ user }) => {
 
                         <div className="flex items-center">
                           <div className="topology-actions mr-4">
-                            <button 
-                              className={`action-button reconfigure-button ${
-                                topology.labOwner?.toLowerCase() !== user?.username?.toLowerCase() ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                
-                                // Check if the current user is the owner of the topology
-                                // This is to prevent users from reconfiguring topologies that they do not own
-                                if (topology.labOwner?.toLowerCase() !== user?.username?.toLowerCase()) {
-                                  alert('You can only reconfigure topologies that you own');
-                                  return;
-                                }
-                                
-                                if (window.confirm('Are you sure you want to reconfigure this topology?')) {
-                                  try {
-                                    setOperationTitle('Reconfiguring Topology');
-                                    setOperationLogs('');
-                                    setShowLogModal(true);
-                                    console.log("Sending reconfigure request:", {
-                                      serverIp: serverIp,
-                                      topoFile: topology.labPath
-                                    });
-                                    
-                                    // Get authentication token
-                                    const token = await getAuthToken(serverIp);
-                                    
-                                    // This is the API call to reconfigure the topology using the direct containerlab API
-                                    const response = await fetch(`/api/v1/labs/deploy`, {
-                                      method: 'POST',
-                                      headers: {
-                                        'Content-Type': 'application/json',
-                                        'Authorization': `Bearer ${token}`
-                                      },
-                                      body: JSON.stringify({
-                                        topo_file: topology.labPath,
-                                        reconfigure: true
-                                      }),
-                                    });
+                            <div className="actions-dropdown-container" ref={openActionsDropdown === `${serverIp}-${topology.topology}` ? actionsDropdownRef : null}>
+                              <button
+                                className="action-button actions-toggle-button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const key = `${serverIp}-${topology.topology}`;
+                                  setOpenActionsDropdown(prev => prev === key ? null : key);
+                                }}
+                              >
+                                Actions &#9662;
+                              </button>
+                              {openActionsDropdown === `${serverIp}-${topology.topology}` && (
+                                <div className="actions-dropdown-menu">
+                                  <button
+                                    className={`actions-dropdown-item reconfigure-item ${
+                                      topology.labOwner?.toLowerCase() !== user?.username?.toLowerCase() ? "opacity-50 cursor-not-allowed" : ""
+                                    }`}
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      setOpenActionsDropdown(null);
 
-                                    // Read the streaming response
-                                    const reader = response.body.getReader();
-                                    const decoder = new TextDecoder();
-                                    let finalJsonStr = '';
-                                    let buffer = '';
+                                      // Check if the current user is the owner of the topology
+                                      // This is to prevent users from reconfiguring topologies that they do not own
+                                      if (topology.labOwner?.toLowerCase() !== user?.username?.toLowerCase()) {
+                                        alert('You can only reconfigure topologies that you own');
+                                        return;
+                                      }
 
-                                    while (true) {
-                                      const { value, done } = await reader.read();
-                                      if (done) break;
-                                      
-                                      const text = decoder.decode(value);
-                                      buffer += text;
-                                      const lines = buffer.split('\n');
-                                      buffer = lines.pop() || '';
-
-                                      for (const line of lines) {
+                                      if (window.confirm('Are you sure you want to reconfigure this topology?')) {
                                         try {
-                                          JSON.parse(line);
-                                          finalJsonStr = line;
-                                        } catch {
-                                          setOperationLogs(prevLogs => prevLogs + line + '\n');
+                                          setOperationTitle('Reconfiguring Topology');
+                                          setOperationLogs('');
+                                          setShowLogModal(true);
+                                          console.log("Sending reconfigure request:", {
+                                            serverIp: serverIp,
+                                            topoFile: topology.labPath
+                                          });
+
+                                          // Get authentication token
+                                          const token = await getAuthToken(serverIp);
+
+                                          // This is the API call to reconfigure the topology using the direct containerlab API
+                                          const response = await fetch(`/api/v1/labs/deploy`, {
+                                            method: 'POST',
+                                            headers: {
+                                              'Content-Type': 'application/json',
+                                              'Authorization': `Bearer ${token}`
+                                            },
+                                            body: JSON.stringify({
+                                              topo_file: topology.labPath,
+                                              reconfigure: true
+                                            }),
+                                          });
+
+                                          // Read the streaming response
+                                          const reader = response.body.getReader();
+                                          const decoder = new TextDecoder();
+                                          let finalJsonStr = '';
+                                          let buffer = '';
+
+                                          while (true) {
+                                            const { value, done } = await reader.read();
+                                            if (done) break;
+
+                                            const text = decoder.decode(value);
+                                            buffer += text;
+                                            const lines = buffer.split('\n');
+                                            buffer = lines.pop() || '';
+
+                                            for (const line of lines) {
+                                              try {
+                                                JSON.parse(line);
+                                                finalJsonStr = line;
+                                              } catch {
+                                                setOperationLogs(prevLogs => prevLogs + line + '\n');
+                                              }
+                                            }
+                                          }
+                                          if (buffer) {
+                                            try {
+                                              JSON.parse(buffer);
+                                              finalJsonStr = buffer;
+                                            } catch {
+                                              setOperationLogs(prevLogs => prevLogs + buffer + '\n');
+                                            }
+                                          }
+
+                                          // Check if response was successful
+                                          if (response.ok) {
+                                            setTimeout(() => {
+                                              setShowLogModal(true);
+                                              alert('Topology reconfigured successfully');
+                                              fetchAllTopologies();
+                                            }, 2000);
+                                          } else {
+                                            alert(`Failed to reconfigure topology: ${finalJsonStr || response.statusText}`);
+                                          }
+                                        } catch (error) {
+                                          console.error('Error reconfiguring topology:', error);
+                                          alert(`Error reconfiguring topology: ${error.message}`);
+                                          setShowLogModal(false);
                                         }
                                       }
-                                    }
-                                    if (buffer) {
-                                      try {
-                                        JSON.parse(buffer);
-                                        finalJsonStr = buffer;
-                                      } catch {
-                                        setOperationLogs(prevLogs => prevLogs + buffer + '\n');
+                                    }}
+                                  >
+                                    Reconfigure
+                                  </button>
+                                  <button
+                                    className={`actions-dropdown-item destroy-item ${
+                                      topology.labOwner?.toLowerCase() !== user?.username?.toLowerCase() ? "opacity-50 cursor-not-allowed" : ""
+                                    }`}
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      setOpenActionsDropdown(null);
+
+                                      // Check if the current user is the owner of the topology
+                                      // This is to prevent users from destroying topologies that they do not own
+                                      if (topology.labOwner?.toLowerCase() !== user?.username?.toLowerCase()) {
+                                        alert('You can only destroy topologies that you own');
+                                        return;
                                       }
-                                    }
 
-                                    // Check if response was successful
-                                    if (response.ok) {
-                                      setTimeout(() => {
-                                        setShowLogModal(true);
-                                        alert('Topology reconfigured successfully');
-                                        fetchAllTopologies();
-                                      }, 2000);
-                                    } else {
-                                      alert(`Failed to reconfigure topology: ${finalJsonStr || response.statusText}`);
-                                    }
-                                  } catch (error) {
-                                    console.error('Error reconfiguring topology:', error);
-                                    alert(`Error reconfiguring topology: ${error.message}`);
-                                    setShowLogModal(false);
-                                  }
-                                }
-                              }}
-                            >
-                              Reconfigure
-                            </button>
-                            <button
-                              className={`action-button destroy-button ${
-                                topology.labOwner?.toLowerCase() !== user?.username?.toLowerCase() ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                
-                                // Check if the current user is the owner of the topology
-                                // This is to prevent users from destroying topologies that they do not own
-                                if (topology.labOwner?.toLowerCase() !== user?.username?.toLowerCase()) {
-                                  alert('You can only destroy topologies that you own');
-                                  return;
-                                }
-                                
-                                if (window.confirm('Are you sure you want to destroy this topology?')) {
-                                  try {
-                                    setOperationTitle('Destroying Topology');
-                                    setOperationLogs('');
-                                    setShowLogModal(true);
-                                    console.log("Sending destroy request:", {
-                                      serverIp: serverIp,
-                                      topoFile: topology.labPath
-                                    });
-                                    
-                                    // Get authentication token
-                                    const token = await getAuthToken(serverIp);
-                                    
-                                    // This is the API call to destroy the topology using the containerlab API
-                                    const response = await fetch(`http://${serverIp}:3001/api/containerlab/destroy`, {
-                                      method: 'POST',
-                                      headers: {
-                                        'Content-Type': 'application/json'
-                                      },
-                                      body: JSON.stringify({
-                                        serverIp: serverIp,
-                                        topoFile: topology.labPath,
-                                        username: user?.username
-                                      }),
-                                    });
-
-                                    // Read the streaming response
-                                    const reader = response.body.getReader();
-                                    const decoder = new TextDecoder();
-                                    let finalJsonStr = '';
-                                    let buffer = '';
-                                    /* Below is the code to read the response from the API call to destroy the topology */
-                                    while (true) {
-                                      const { value, done } = await reader.read();
-                                      if (done) break;
-                                      
-                                      const text = decoder.decode(value);
-                                      buffer += text;
-                                      const lines = buffer.split('\n');
-                                      buffer = lines.pop() || '';
-
-                                      for (const line of lines) {
+                                      if (window.confirm('Are you sure you want to destroy this topology?')) {
                                         try {
-                                          JSON.parse(line);
-                                          finalJsonStr = line;
-                                        } catch {
-                                          setOperationLogs(prevLogs => prevLogs + line + '\n');
+                                          setOperationTitle('Destroying Topology');
+                                          setOperationLogs('');
+                                          setShowLogModal(true);
+                                          console.log("Sending destroy request:", {
+                                            serverIp: serverIp,
+                                            topoFile: topology.labPath
+                                          });
+
+                                          // Get authentication token
+                                          const token = await getAuthToken(serverIp);
+
+                                          // This is the API call to destroy the topology using the containerlab API
+                                          const response = await fetch(`http://${serverIp}:3001/api/containerlab/destroy`, {
+                                            method: 'POST',
+                                            headers: {
+                                              'Content-Type': 'application/json'
+                                            },
+                                            body: JSON.stringify({
+                                              serverIp: serverIp,
+                                              topoFile: topology.labPath,
+                                              username: user?.username
+                                            }),
+                                          });
+
+                                          // Read the streaming response
+                                          const reader = response.body.getReader();
+                                          const decoder = new TextDecoder();
+                                          let finalJsonStr = '';
+                                          let buffer = '';
+                                          /* Below is the code to read the response from the API call to destroy the topology */
+                                          while (true) {
+                                            const { value, done } = await reader.read();
+                                            if (done) break;
+
+                                            const text = decoder.decode(value);
+                                            buffer += text;
+                                            const lines = buffer.split('\n');
+                                            buffer = lines.pop() || '';
+
+                                            for (const line of lines) {
+                                              try {
+                                                JSON.parse(line);
+                                                finalJsonStr = line;
+                                              } catch {
+                                                setOperationLogs(prevLogs => prevLogs + line + '\n');
+                                              }
+                                            }
+                                          }
+                                          if (buffer) {
+                                            try {
+                                              JSON.parse(buffer);
+                                              finalJsonStr = buffer;
+                                            } catch {
+                                              setOperationLogs(prevLogs => prevLogs + buffer + '\n');
+                                            }
+                                          }
+
+                                          // Check if response was successful
+                                          if (response.ok) {
+                                            setTimeout(() => {
+                                              setShowLogModal(true);
+                                              alert('Topology destroyed successfully');
+                                              fetchAllTopologies();
+                                            }, 2000);
+                                          } else {
+                                            alert(`Failed to destroy topology: ${finalJsonStr || response.statusText}`);
+                                          }
+                                        } catch (error) {
+                                          console.error('Error destroying topology:', error);
+                                          alert(`Error destroying topology: ${error.message}`);
+                                          setShowLogModal(false);
                                         }
                                       }
-                                    }
-                                    if (buffer) {
-                                      try {
-                                        JSON.parse(buffer);
-                                        finalJsonStr = buffer;
-                                      } catch {
-                                        setOperationLogs(prevLogs => prevLogs + buffer + '\n');
+                                    }}
+                                  >
+                                    Destroy
+                                  </button>
+                                  <button
+                                    className={`actions-dropdown-item save-item ${
+                                      topology.labOwner?.toLowerCase() !== user?.username?.toLowerCase() ? "opacity-50 cursor-not-allowed" : ""
+                                    }`}
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      setOpenActionsDropdown(null);
+
+                                      // Check if the current user is the owner of the topology
+                                      // This is to prevent users from saving topologies that they do not own
+                                      if (topology.labOwner?.toLowerCase() !== user?.username?.toLowerCase()) {
+                                        alert('You can only save topologies that you own');
+                                        return;
                                       }
-                                    }
-                                    
-                                    // Check if response was successful
-                                    if (response.ok) {
-                                      setTimeout(() => {
-                                        setShowLogModal(true);
-                                        alert('Topology destroyed successfully');
-                                        fetchAllTopologies();
-                                      }, 2000);
-                                    } else {
-                                      alert(`Failed to destroy topology: ${finalJsonStr || response.statusText}`);
-                                    }
-                                  } catch (error) {
-                                    console.error('Error destroying topology:', error);
-                                    alert(`Error destroying topology: ${error.message}`);
-                                    setShowLogModal(false);
-                                  }
-                                }
-                              }}
-                            >
-                              Destroy
-                            </button>
+
+                                      if (window.confirm('Are you sure you want to save this topology?')) {
+                                        try {
+                                          setOperationTitle('Saving Topology');
+                                          setOperationLogs('');
+                                          setShowLogModal(true);
+                                          console.log("Sending saving request:", {
+                                            serverIp: serverIp,
+                                            topoFile: topology.labPath
+                                          });
+
+                                          // Get authentication token
+                                          const token = await getAuthToken(serverIp);
+
+                                          // This is the API call to save the topology using the containerlab API
+                                          const response = await fetch(`http://${serverIp}:3001/api/containerlab/save`, {
+                                            method: 'POST',
+                                            headers: {
+                                              'Content-Type': 'application/json'
+                                            },
+                                            body: JSON.stringify({
+                                              serverIp: serverIp,
+                                              topoFile: topology.labPath,
+                                              username: user?.username
+                                            }),
+                                          });
+
+                                          // Read the streaming response
+                                          const reader = response.body.getReader();
+                                          const decoder = new TextDecoder();
+                                          let finalJsonStr = '';
+                                          let buffer = '';
+
+                                          /* Below is the code to read the response from the API call to save the topology */
+                                          while (true) {
+                                            const { value, done } = await reader.read();
+                                            if (done) break;
+
+                                            const text = decoder.decode(value);
+                                            buffer += text;
+                                            const lines = buffer.split('\n');
+                                            buffer = lines.pop() || '';
+
+                                            for (const line of lines) {
+                                              try {
+                                                JSON.parse(line);
+                                                finalJsonStr = line;
+                                              } catch {
+                                                setOperationLogs(prevLogs => prevLogs + line + '\n');
+                                              }
+                                            }
+                                          }
+                                          if (buffer) {
+                                            try {
+                                              JSON.parse(buffer);
+                                              finalJsonStr = buffer;
+                                            } catch {
+                                              setOperationLogs(prevLogs => prevLogs + buffer + '\n');
+                                            }
+                                          }
+
+                                          // Check if response was successful
+                                          if (response.ok) {
+                                            setTimeout(() => {
+                                              setShowLogModal(true);
+                                              alert('Topology saved successfully');
+                                              fetchAllTopologies();
+                                            }, 2000);
+                                          } else {
+                                            alert(`Failed to save topology: ${finalJsonStr || response.statusText}`);
+                                          }
+                                        } catch (error) {
+                                          console.error('Error saving topology:', error);
+                                          alert(`Error saving topology: ${error.message}`);
+                                          setShowLogModal(false);
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    Save
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                             <button // This is the button to SSH into the nodes in the topology
                               className="action-button ssh-button"
                               onClick={async (e) => {
@@ -909,100 +1035,6 @@ const ClabServers = ({ user }) => {
                               }}
                             >
                               SSH
-                            </button>
-                            <button 
-                              className={`action-button save-button ${
-                                topology.labOwner?.toLowerCase() !== user?.username?.toLowerCase() ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                
-                                // Check if the current user is the owner of the topology
-                                // This is to prevent users from saving topologies that they do not own
-                                if (topology.labOwner?.toLowerCase() !== user?.username?.toLowerCase()) {
-                                  alert('You can only save topologies that you own');
-                                  return;
-                                }
-                                
-                                if (window.confirm('Are you sure you want to save this topology?')) {
-                                  try {
-                                    setOperationTitle('Saving Topology');
-                                    setOperationLogs('');
-                                    setShowLogModal(true);
-                                    console.log("Sending saving request:", {
-                                      serverIp: serverIp,
-                                      topoFile: topology.labPath
-                                    });
-                                    
-                                    // Get authentication token
-                                    const token = await getAuthToken(serverIp);
-                                    
-                                    // This is the API call to save the topology using the containerlab API
-                                    const response = await fetch(`http://${serverIp}:3001/api/containerlab/save`, {
-                                      method: 'POST',
-                                      headers: {
-                                        'Content-Type': 'application/json'
-                                      },
-                                      body: JSON.stringify({
-                                        serverIp: serverIp,
-                                        topoFile: topology.labPath,
-                                        username: user?.username
-                                      }),
-                                    });
-
-                                    // Read the streaming response
-                                    const reader = response.body.getReader();
-                                    const decoder = new TextDecoder();
-                                    let finalJsonStr = '';
-                                    let buffer = '';
-
-                                    /* Below is the code to read the response from the API call to save the topology */
-                                    while (true) {
-                                      const { value, done } = await reader.read();
-                                      if (done) break;
-                                      
-                                      const text = decoder.decode(value);
-                                      buffer += text;
-                                      const lines = buffer.split('\n');
-                                      buffer = lines.pop() || '';
-
-                                      for (const line of lines) {
-                                        try {
-                                          JSON.parse(line);
-                                          finalJsonStr = line;
-                                        } catch {
-                                          setOperationLogs(prevLogs => prevLogs + line + '\n');
-                                        }
-                                      }
-                                    }
-                                    if (buffer) {
-                                      try {
-                                        JSON.parse(buffer);
-                                        finalJsonStr = buffer;
-                                      } catch {
-                                        setOperationLogs(prevLogs => prevLogs + buffer + '\n');
-                                      }
-                                    }
-
-                                    // Check if response was successful
-                                    if (response.ok) {
-                                      setTimeout(() => {
-                                        setShowLogModal(true);
-                                        alert('Topology saved successfully');
-                                        fetchAllTopologies();
-                                      }, 2000);
-                                    } else {
-                                      alert(`Failed to save topology: ${finalJsonStr || response.statusText}`);
-                                    }
-                                  } catch (error) {
-                                    console.error('Error saving topology:', error);
-                                    alert(`Error saving topology: ${error.message}`);
-                                    setShowLogModal(false);
-                                  }
-                                }
-                              }}
-                            >
-                              Save
                             </button>
                             <button
                               className="action-button topology-view-button"
