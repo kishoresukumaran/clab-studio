@@ -1022,6 +1022,184 @@ const ClabServers = ({ user }) => {
                                   >
                                     Save
                                   </button>
+                                  <button
+                                    className={`actions-dropdown-item stop-item ${
+                                      topology.labOwner?.toLowerCase() !== user?.username?.toLowerCase() ? "opacity-50 cursor-not-allowed" : ""
+                                    }`}
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      setOpenActionsDropdown(null);
+
+                                      if (topology.labOwner?.toLowerCase() !== user?.username?.toLowerCase()) {
+                                        alert('You can only stop topologies that you own');
+                                        return;
+                                      }
+
+                                      if (window.confirm('Are you sure you want to stop all containers for this topology?')) {
+                                        try {
+                                          setOperationTitle('Stopping Topology');
+                                          setOperationLogs('');
+                                          setShowLogModal(true);
+                                          console.log("Sending stop request:", {
+                                            serverIp: serverIp,
+                                            topologyName: topology.topology
+                                          });
+
+                                          const response = await fetch(`http://${serverIp}:3001/api/containerlab/stop`, {
+                                            method: 'POST',
+                                            headers: {
+                                              'Content-Type': 'application/json'
+                                            },
+                                            body: JSON.stringify({
+                                              serverIp: serverIp,
+                                              topologyName: topology.topology,
+                                              username: user?.username
+                                            }),
+                                          });
+
+                                          const reader = response.body.getReader();
+                                          const decoder = new TextDecoder();
+                                          let finalJsonStr = '';
+                                          let buffer = '';
+
+                                          while (true) {
+                                            const { value, done } = await reader.read();
+                                            if (done) break;
+
+                                            const text = decoder.decode(value);
+                                            buffer += text;
+                                            const lines = buffer.split('\n');
+                                            buffer = lines.pop() || '';
+
+                                            for (const line of lines) {
+                                              try {
+                                                JSON.parse(line);
+                                                finalJsonStr = line;
+                                              } catch {
+                                                setOperationLogs(prevLogs => prevLogs + line + '\n');
+                                              }
+                                            }
+                                          }
+                                          if (buffer) {
+                                            try {
+                                              JSON.parse(buffer);
+                                              finalJsonStr = buffer;
+                                            } catch {
+                                              setOperationLogs(prevLogs => prevLogs + buffer + '\n');
+                                            }
+                                          }
+
+                                          let stopResult = {};
+                                          try { stopResult = JSON.parse(finalJsonStr); } catch {}
+
+                                          if (stopResult.success) {
+                                            setTimeout(() => {
+                                              setShowLogModal(true);
+                                              alert('Topology stopped successfully');
+                                              fetchAllTopologies();
+                                            }, 2000);
+                                          } else {
+                                            alert(`Failed to stop topology: ${stopResult.error || stopResult.message || response.statusText}`);
+                                          }
+                                        } catch (error) {
+                                          console.error('Error stopping topology:', error);
+                                          alert(`Error stopping topology: ${error.message}`);
+                                          setShowLogModal(false);
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    Stop
+                                  </button>
+                                  <button
+                                    className={`actions-dropdown-item redeploy-item ${
+                                      topology.labOwner?.toLowerCase() !== user?.username?.toLowerCase() ? "opacity-50 cursor-not-allowed" : ""
+                                    }`}
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      setOpenActionsDropdown(null);
+
+                                      if (topology.labOwner?.toLowerCase() !== user?.username?.toLowerCase()) {
+                                        alert('You can only redeploy topologies that you own');
+                                        return;
+                                      }
+
+                                      if (window.confirm('Are you sure you want to redeploy this topology? This will destroy and then deploy the topology.')) {
+                                        try {
+                                          setOperationTitle('Redeploying Topology');
+                                          setOperationLogs('');
+                                          setShowLogModal(true);
+                                          console.log("Sending redeploy request:", {
+                                            serverIp: serverIp,
+                                            topoFile: topology.labPath
+                                          });
+
+                                          const response = await fetch(`http://${serverIp}:3001/api/containerlab/redeploy`, {
+                                            method: 'POST',
+                                            headers: {
+                                              'Content-Type': 'application/json'
+                                            },
+                                            body: JSON.stringify({
+                                              serverIp: serverIp,
+                                              topoFile: topology.labPath,
+                                              username: user?.username
+                                            }),
+                                          });
+
+                                          const reader = response.body.getReader();
+                                          const decoder = new TextDecoder();
+                                          let finalJsonStr = '';
+                                          let buffer = '';
+
+                                          while (true) {
+                                            const { value, done } = await reader.read();
+                                            if (done) break;
+
+                                            const text = decoder.decode(value);
+                                            buffer += text;
+                                            const lines = buffer.split('\n');
+                                            buffer = lines.pop() || '';
+
+                                            for (const line of lines) {
+                                              try {
+                                                JSON.parse(line);
+                                                finalJsonStr = line;
+                                              } catch {
+                                                setOperationLogs(prevLogs => prevLogs + line + '\n');
+                                              }
+                                            }
+                                          }
+                                          if (buffer) {
+                                            try {
+                                              JSON.parse(buffer);
+                                              finalJsonStr = buffer;
+                                            } catch {
+                                              setOperationLogs(prevLogs => prevLogs + buffer + '\n');
+                                            }
+                                          }
+
+                                          let redeployResult = {};
+                                          try { redeployResult = JSON.parse(finalJsonStr); } catch {}
+
+                                          if (redeployResult.success) {
+                                            setTimeout(() => {
+                                              setShowLogModal(true);
+                                              alert('Topology redeployed successfully');
+                                              fetchAllTopologies();
+                                            }, 2000);
+                                          } else {
+                                            alert(`Failed to redeploy topology: ${redeployResult.error || redeployResult.message || response.statusText}`);
+                                          }
+                                        } catch (error) {
+                                          console.error('Error redeploying topology:', error);
+                                          alert(`Error redeploying topology: ${error.message}`);
+                                          setShowLogModal(false);
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    Redeploy
+                                  </button>
                                 </div>
                               )}
                             </div>

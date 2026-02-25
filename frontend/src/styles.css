@@ -1446,6 +1446,22 @@ button[onClick*="handleAddKind"] {
   background-color: #d1fae5;
 }
 
+.actions-dropdown-item.stop-item {
+  color: #b45309;
+}
+
+.actions-dropdown-item.stop-item:hover {
+  background-color: #fef3c7;
+}
+
+.actions-dropdown-item.redeploy-item {
+  color: #7c3aed;
+}
+
+.actions-dropdown-item.redeploy-item:hover {
+  background-color: #ede9fe;
+}
+
 .topology-view-button {
   background-color: #e0e7ff;
   color: #4338ca;
