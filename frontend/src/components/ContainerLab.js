@@ -200,7 +200,6 @@ const App = ({ user, parentSetMode }) => {
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
   const [selectedServer, setSelectedServer] = useState(null);
   const [deployLoading, setDeployLoading] = useState({});
-  const [reconfigureLoading, setReconfigureLoading] = useState({});
   const [labExistsOnServer, setLabExistsOnServer] = useState({});
   const [showLogModal, setShowLogModal] = useState(false);
   const [operationLogs, setOperationLogs] = useState('');
@@ -552,10 +551,6 @@ const App = ({ user, parentSetMode }) => {
         setNodeImage('arista_ceos:4.35.1F');
       } else if (nodeType === 'bridge') {
         setNodeNamePrefix('bridge');
-        setNodeKind('linux');
-        setNodeImage('alpine');
-      } else if (nodeType === 'linux-host') {
-        setNodeNamePrefix('linux');
         setNodeKind('linux');
         setNodeImage('alpine');
       } else if (nodeType === 'container') {
@@ -1493,117 +1488,6 @@ const App = ({ user, parentSetMode }) => {
       return () => clearInterval(intervalId);
     }
   }, [isDeployModalOpen]);
-
-  /* This is the function to handle reconfiguration of the topology on the containerlab server */
-  const handleServerReconfigure = async (serverIp) => {
-    try {
-      // Verify that we have a topology name
-      if (!topologyName.trim()) {
-        setErrorMessage('Please provide a topology name before reconfiguring.');
-        setShowErrorModal(true);
-        return;
-      }
-      
-      setReconfigureLoading(prev => ({ ...prev, [serverIp]: true }));
-      setOperationTitle('Reconfiguring Topology');
-      setShowLogModal(true);
-      setOperationLogs('Starting reconfiguration...\n');
-      
-      // Get the topology name with proper formatting
-      const formattedTopologyName = topologyName.includes(user?.username) 
-        ? topologyName 
-        : `${user?.username || ''}-${topologyName}`;
-      
-      setOperationLogs(prev => prev + `\nReconfiguring lab: ${formattedTopologyName}\n`);
-      setOperationLogs(prev => prev + `\nNote: Reconfiguration will only work if this topology has been previously deployed to this server.\n`);
-      
-      // Step 1: Login to get the authentication token
-      setOperationLogs(prev => prev + '\nLogging in to containerlab API...\n');
-      
-      // Use relative URL to leverage the proxy setting in package.json
-      const loginResponse = await fetch(`/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          username: user?.username,
-          password: 'ul678clab'
-        })
-      });
-
-      if (!loginResponse.ok) {
-        throw new Error(`Login failed: ${loginResponse.status} ${loginResponse.statusText}`);
-      }
-
-      const loginData = await loginResponse.json();
-      const authToken = loginData.token;
-
-      setOperationLogs(prev => prev + 'Successfully logged in to containerlab API\n');
-      setOperationLogs(prev => prev + '\nPreparing to reconfigure topology...\n');
-
-      // Step 2: Parse the YAML to a JSON object for the API
-      const topologyContentJson = yaml.load(yamlOutput);
-      
-      // Start a progress indicator to show reconfiguration is ongoing
-      setOperationLogs(prev => prev + '\nReconfiguration in progress. This might take a few minutes...\n');
-      
-      // Set up a progress indicator that updates every 5 seconds
-      const progressInterval = setInterval(() => {
-        setOperationLogs(prev => prev + '• Still working on reconfiguration, please wait...\n');
-      }, 5000);
-      
-      try {
-        // Step 3: Send the topology to the containerlab API with reconfigure=true
-        const deployResponse = await fetch(`/api/v1/labs?reconfigure=true`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({
-            topologyContent: topologyContentJson
-          })
-        });
-        
-        // Clear the progress indicator once we get a response
-        clearInterval(progressInterval);
-        
-        if (!deployResponse.ok) {
-          const errorText = await deployResponse.text();
-          throw new Error(`Reconfiguration failed: ${deployResponse.status} - ${errorText}`);
-        }
-        
-        // Process the response here inside the try block
-        const contentType = deployResponse.headers.get('content-type');
-        let responseData;
-        
-        if (contentType && contentType.includes('application/json')) {
-          responseData = await deployResponse.json();
-          setOperationLogs(prev => prev + '\nReconfiguration completed successfully!\n');
-          setOperationLogs(prev => prev + JSON.stringify(responseData, null, 2));
-        } else {
-          responseData = await deployResponse.text();
-          setOperationLogs(prev => prev + '\nReconfiguration completed successfully!\n');
-          setOperationLogs(prev => prev + responseData);
-        }
-        
-        setDeploymentSuccess(true);
-        return;
-      } catch (error) {
-        // Make sure to clear the interval if there's an error
-        clearInterval(progressInterval);
-        throw error;
-      }
-    } catch (error) {
-      console.error('Error reconfiguring topology:', error);
-      setOperationLogs(prev => prev + `\nError: ${error.message}`);
-    } finally {
-      setReconfigureLoading(prev => ({ ...prev, [serverIp]: false }));
-    }
-  };
 
   /* This is the function to handle the deployment of the topology to the containerlab server you selected. */
   const handleServerDeploy = async (serverIp) => {
@@ -3432,7 +3316,7 @@ const App = ({ user, parentSetMode }) => {
                                 disabled={deployLoading[server.ip] || labExistsOnServer[server.ip] || serverResources[server.ip]?.memory > 90}
                                 title={
                                   labExistsOnServer[server.ip] ?
-                                    "Topology already exists on this server. Use Reconfigure instead." :
+                                    "Topology already exists on this server. Use Reconfigure from the Dashboard instead." :
                                   serverResources[server.ip]?.memory > 90 ? 
                                     "Deployment disabled: Server memory usage exceeds 90%" : 
                                   serverResources[server.ip]?.memory > 80 ?
@@ -3460,28 +3344,6 @@ const App = ({ user, parentSetMode }) => {
                                     </div>
                                   ) : "Deploy"
                                 )}
-                              </button>
-                              
-                              <button
-                                onClick={() => handleServerReconfigure(server.ip)}
-                                className={`server-action-btn text-sm px-3 py-1 rounded ${
-                                  reconfigureLoading[server.ip] ? 'bg-gray-400 text-gray-700' : 
-                                  !labExistsOnServer[server.ip] ? 'bg-gray-300 text-gray-500 opacity-60 cursor-not-allowed border border-gray-400' :
-                                  'bg-green-100 text-green-700 hover:bg-green-200 border border-green-400'
-                                }`}
-                                disabled={reconfigureLoading[server.ip] || !labExistsOnServer[server.ip]}
-                                title={
-                                  !labExistsOnServer[server.ip] ? 
-                                  "Cannot reconfigure: This topology has not been deployed to this server yet" : 
-                                  "Reconfigure existing topology"
-                                }
-                              >
-                                {reconfigureLoading[server.ip] ? (
-                                  <div className="flex items-center">
-                                    <Loader2 className="animate-spin mr-2" size={18} />
-                                    Reconfiguring...
-                                  </div>
-                                ) : "Reconfigure"}
                               </button>
                             </div>
                           </td>

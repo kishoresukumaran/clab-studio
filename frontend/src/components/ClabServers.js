@@ -764,19 +764,16 @@ const ClabServers = ({ user }) => {
                                             topoFile: topology.labPath
                                           });
 
-                                          // Get authentication token
-                                          const token = await getAuthToken(serverIp);
-
-                                          // This is the API call to reconfigure the topology using the direct containerlab API
-                                          const response = await fetch(`/api/v1/labs/deploy`, {
+                                          // This is the API call to reconfigure the topology via the backend SSH endpoint
+                                          const response = await fetch(`http://${serverIp}:3001/api/containerlab/reconfigure-existing`, {
                                             method: 'POST',
                                             headers: {
-                                              'Content-Type': 'application/json',
-                                              'Authorization': `Bearer ${token}`
+                                              'Content-Type': 'application/json'
                                             },
                                             body: JSON.stringify({
-                                              topo_file: topology.labPath,
-                                              reconfigure: true
+                                              serverIp: serverIp,
+                                              topoFile: topology.labPath,
+                                              username: user?.username
                                             }),
                                           });
 

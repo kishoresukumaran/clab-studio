@@ -403,11 +403,87 @@ app.post('/api/containerlab/reconfigure', upload.single('file'), async (req, res
     }
 });
 
+app.post('/api/containerlab/reconfigure-existing', async (req, res) => {
+    try {
+        const { serverIp, topoFile, username } = req.body;
+        console.log('Reconfigure existing request:', req.body);
+
+        if (!serverIp || !topoFile || !username) {
+            return res.status(400).json({
+                error: 'Server IP, topology file path, and username are required'
+            });
+        }
+
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        const ssh = new NodeSSH();
+
+        try {
+            res.write(`Connecting to server as ${username}...\n`);
+            await ssh.connect({
+                ...getSshConfig(username),
+                host: serverIp
+            });
+            res.write('Connected successfully\n');
+        } catch (error) {
+            res.write(`Failed to connect to server: ${error.message}\n`);
+            res.end();
+            return;
+        }
+
+        try {
+            res.write('Executing containerlab reconfigure command...\n');
+            const absoluteTopoPath = topoFile;
+            const reconfigureCommand = `clab deploy --topo ${absoluteTopoPath} --reconfigure`;
+            const result = await ssh.execCommand(reconfigureCommand, {
+                cwd: '/',
+                onStdout: (chunk) => {
+                    res.write(`stdout: ${chunk.toString()}\n`);
+                },
+                onStderr: (chunk) => {
+                    res.write(`stderr: ${chunk.toString()}\n`);
+                }
+            });
+
+            if (result.code === 0) {
+                res.write('Operation completed successfully\n');
+                res.end(JSON.stringify({
+                    success: true,
+                    message: 'Topology reconfigured successfully'
+                }));
+            } else {
+                res.write(`Operation failed: ${result.stderr}\n`);
+                res.end(JSON.stringify({
+                    success: false,
+                    message: 'Reconfigure operation failed',
+                    error: result.stderr
+                }));
+            }
+
+        } catch (error) {
+            res.write(`Operation failed: ${error.message}\n`);
+            res.end(JSON.stringify({
+                error: `Reconfigure operation failed: ${error.message}`
+            }));
+        } finally {
+            ssh.dispose();
+        }
+
+    } catch (error) {
+        res.write(`Server error: ${error.message}\n`);
+        res.end(JSON.stringify({
+            error: `Server error: ${error.message}`
+        }));
+    }
+});
+
 app.post('/api/containerlab/save', async (req, res) => {
     try {
         const { serverIp, topoFile, username } = req.body;
         console.log('Save lab request:', req.body);
-        
+
         if (!serverIp || !topoFile || !username) {
             return res.status(400).json({ 
                 error: 'Server IP and topology file path are required' 
