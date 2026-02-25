@@ -20,6 +20,7 @@ import { Server, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import LogModal from './LogModal';
 import FileManagerModal from './FileManagerModal';
 import { useTopology } from '../contexts/TopologyContext';
+import { getServerOptions, getServersWithStatus } from '../utils/config';
 
 import Editor from 'react-simple-code-editor';
 import { highlight, languages } from 'prismjs/components/prism-core';
@@ -349,10 +350,7 @@ const App = ({ user, parentSetMode }) => {
     return imageOptions.filter(option => option.kind === nodeKind);
   };
 
-  /* This is the list of servers that can be used for the deployment of the topology. Again this is hardcoded, any changes to the servers will need to be made here. This is displayed in the Server table after you click on deploy */
-  const serverOptions = [
-    { value: "10.83.12.237", label: "10.83.12.237" }
-  ];
+  const serverOptions = getServerOptions();
 
   // const handleModeChange = (newMode) => {
   //   setMode(newMode);
@@ -3225,9 +3223,7 @@ const App = ({ user, parentSetMode }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {[
-                        { name: 'ul-clab-1', ip: '10.83.12.237', status: 'active' }
-                      ].map((server) => (
+                      {getServersWithStatus().map((server) => (
                         <tr key={server.name} className="hover:bg-gray-50">
                           <td className="border border-gray-200 px-4 py-2">
                             <div className="server-info">

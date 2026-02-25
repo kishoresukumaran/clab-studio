@@ -3,7 +3,7 @@
 // Update clab-config.env in the repo root and run setup.sh to change settings
 module.exports = {
   // Server IP where this service is running
-  serverIp: process.env.SERVER_IP || '10.83.12.237',
+  serverIp: process.env.SERVER_IP || 'localhost',
 
   // API port settings
   expressApiPort: parseInt(process.env.BACKEND_API_PORT || '3001', 10),

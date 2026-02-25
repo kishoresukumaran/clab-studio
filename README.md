@@ -12,24 +12,67 @@ Web-based platform for designing, deploying, and managing containerlab network t
 - **User Management** — Role-based access control with admin user provisioning
 - **Help Center** — Built-in documentation site accessible via the `?` icon or `/helpcenter`
 
+## Prerequisites
+
+- **OS:** Linux (Ubuntu/Debian) — the setup script uses `apt-get`
+- **Access:** Root or sudo privileges
+- **Tools:** `git` and `curl` must be installed
+- **Ports:** The following ports must be available (not blocked by firewall):
+
+| Port | Service |
+|------|---------|
+| 80 | Frontend (Web UI) |
+| 3000 | Auth API |
+| 3001 | Backend API |
+| 8080 | Containerlab API |
+| 8081 | Mongo Express (DB admin) |
+| 27017 | MongoDB |
+
 ## Quick Start
 
 ```bash
 # 1. Clone the repo
-git clone <repo-url> /opt/clab-studio
+git clone https://github.com/kishoresukumaran/clab-studio.git /opt/clab-studio
 cd /opt/clab-studio
 
 # 2. Create config from template
 cp clab-config.env.example clab-config.env
 
-# 3. Edit config — set your server IP and passwords
+# 3. Edit config — update the CHANGE_ME values (see Configuration below)
 nano clab-config.env
 
-# 4. Run setup (installs Docker, containerlab, builds and starts everything)
+# 4. Make setup script executable and run it
+chmod +x setup.sh
 sudo ./setup.sh
 ```
 
-Access at `http://<your-server-ip>`. Default login: `labadmin` / `arastra`.
+Access at `http://<your-server-ip>`. Login with the admin credentials you set in `clab-config.env`.
+
+## Configuration
+
+Edit `clab-config.env` before running setup. The following values **must** be changed (marked `CHANGE_ME` in the template):
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `SERVER_IP` | Your server's IP address | `10.0.0.50` |
+| `CLAB_SERVERS` | Server list in `name:ip` format (use the same IP for single-server) | `my-server:10.0.0.50` |
+| `SSH_PASSWORD` | Password for the SSH user created for backend operations | `mypassword` |
+| `LAB_ADMIN_PASSWORD` | Web UI admin login password | `myadminpass` |
+
+Optional variables (defaults are usually fine):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AUTH_API_PORT` | `3000` | Auth service port |
+| `BACKEND_API_PORT` | `3001` | Backend API port |
+| `CONTAINERLAB_API_PORT` | `8080` | Containerlab API port |
+| `FRONTEND_PORT` | `80` | Frontend port |
+| `SSH_USERNAME` | `student` | System user created for backend SSH operations |
+| `TOPOLOGY_PATH` | `/home/clab_nfs_share/containerlab_topologies` | Where topology files are stored |
+| `LAB_ADMIN_USER` | `labadmin` | Web UI admin username |
+| `MONGODB_URI` | *(empty)* | Only set if using an external MongoDB instead of the bundled Docker container |
+
+`clab-config.env` is the **only** file you need to edit. The setup script generates all other config files automatically.
 
 ## Architecture
 
@@ -43,6 +86,8 @@ Access at `http://<your-server-ip>`. Default login: `labadmin` / `arastra`.
 | MongoDB | 27017 | User database |
 | Help Center (MkDocs) | — | Documentation site (proxied at /helpcenter) |
 
+See `docs/ARCHITECTURE.md` for detailed architecture documentation, data flows, and security notes.
+
 ## Project Structure
 
 ```
@@ -51,6 +96,7 @@ clab-studio/
 ├── backend/        # Backend API (Express + containerlab CLI)
 ├── frontend/       # React web UI (served via Nginx)
 ├── helpcenter/     # Help center documentation (MkDocs Material)
+├── docs/           # Architecture documentation
 ├── docker-compose.yml
 ├── setup.sh
 ├── clab-config.env.example
@@ -73,4 +119,25 @@ make clean          # Remove containers, volumes, and images
 1. Edit `clab-config.env`
 2. Run `sudo ./setup.sh`
 
-This regenerates the nginx config and frontend environment, rebuilds containers, and restarts everything.
+This regenerates the nginx config, MongoDB init script, and frontend environment, rebuilds containers, and restarts everything.
+
+## Troubleshooting
+
+```bash
+# Check if all services are running
+make status
+
+# View logs for a specific service
+make logs-auth-api
+make logs-containerlab-api
+make logs-containerlab-designer
+
+# Check for port conflicts
+sudo lsof -i :80 -i :3000 -i :3001 -i :8080 -i :8081 -i :27017
+
+# Restart everything from scratch
+make clean
+sudo ./setup.sh
+```
+
+For detailed troubleshooting steps, see `docs/ARCHITECTURE.md`.

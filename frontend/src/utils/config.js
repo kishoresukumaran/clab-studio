@@ -6,7 +6,7 @@
  */
 
 // Server IP and API URLs
-export const SERVER_IP = process.env.REACT_APP_SERVER_IP || '10.83.12.237';
+export const SERVER_IP = process.env.REACT_APP_SERVER_IP || 'localhost';
 export const AUTH_API_URL = process.env.REACT_APP_AUTH_API_URL || `http://${SERVER_IP}:3000`;
 export const BACKEND_API_URL = process.env.REACT_APP_BACKEND_API_URL || `http://${SERVER_IP}:3001`;
 export const CONTAINERLAB_API_URL = process.env.REACT_APP_CONTAINERLAB_API_URL || `http://${SERVER_IP}:8080`;

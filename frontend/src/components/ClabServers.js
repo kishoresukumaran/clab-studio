@@ -16,6 +16,7 @@ import LogModal from './LogModal';
 import SshModal from './SshModal';
 import TopologyModal from './topology/TopologyModal';
 import { parseContainerlabYaml } from './topology/topologyParser';
+import { getClabServers, getServersWithStatus } from '../utils/config';
 
 const ClabServers = ({ user }) => {
   const [topologies, setTopologies] = useState({});
@@ -47,20 +48,7 @@ const ClabServers = ({ user }) => {
     return () => document.removeEventListener('mousedown', closeActionsDropdown);
   }, [closeActionsDropdown]);
 
-  /**
-   * List of containerlab servers available in the environment.
-   * These servers have containerlab installed and are used to deploy and manage network topologies.
-   * Each server is displayed in the dashboard with its status, metrics, and hosted topologies.
-   * The dashboard connects to these servers via their IP addresses to perform operations like:
-   * - Fetching deployed topologies
-   * - Reconfiguring topologies
-   * - Destroying topologies
-   * - Saving configurations
-   * - SSH connections to containers
-   */
-  const servers = [
-    { name: 'ul-clab-1', ip: '10.83.12.237' },
-  ];
+  const servers = getClabServers();
   
   /**
    * Get an authentication token from the containerlab API
@@ -564,10 +552,7 @@ const ClabServers = ({ user }) => {
           </tr>
         </thead>
         <tbody>
-          {/* This is a list of servers to display in the table. Right now it is hardcoded, any changes to the servers will need to be made here. */}
-          {[
-            { name: 'ul-clab-1', ip: '10.83.12.237', status: 'active' }
-          ].map((server) => (
+          {getServersWithStatus().map((server) => (
             <tr key={server.name} className="hover:bg-gray-50">
               <td className="border border-gray-200 px-4 py-2">
                 <div className="server-info">

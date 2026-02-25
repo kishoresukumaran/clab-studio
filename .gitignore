@@ -11,6 +11,7 @@ clab-config.env
 # Generated files
 frontend/.env
 frontend/nginx.conf
+auth/init-mongo.js
 
 # Build artifacts
 frontend/build/

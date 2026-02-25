@@ -64,6 +64,8 @@ CLAB_SERVERS=${CLAB_SERVERS:-"ul-clab-1:$SERVER_IP"}
 TOPOLOGY_PATH=${TOPOLOGY_PATH:-"/home/clab_nfs_share/containerlab_topologies"}
 SSH_USERNAME=${SSH_USERNAME:-"student"}
 SSH_PASSWORD=${SSH_PASSWORD:-"ul678clab"}
+LAB_ADMIN_USER=${LAB_ADMIN_USER:-"labadmin"}
+LAB_ADMIN_PASSWORD=${LAB_ADMIN_PASSWORD:-"arastra"}
 
 echo -e "${GREEN}Configuration loaded:${NC}"
 echo "  SERVER_IP:             $SERVER_IP"
@@ -188,7 +190,23 @@ echo -e "${GREEN}Topology directory ready: $TOPOLOGY_PATH (group: clab_admins, s
 echo ""
 
 # ============================================
-# Step 6: Generate nginx.conf from template
+# Step 6: Generate init-mongo.js from template
+# ============================================
+echo -e "${YELLOW}Generating MongoDB init script...${NC}"
+
+if [ -f "$AUTH_DIR/init-mongo.js.template" ]; then
+    sed -e "s|LAB_ADMIN_USER_PLACEHOLDER|$LAB_ADMIN_USER|g" \
+        -e "s|LAB_ADMIN_PASSWORD_PLACEHOLDER|$LAB_ADMIN_PASSWORD|g" \
+        "$AUTH_DIR/init-mongo.js.template" > "$AUTH_DIR/init-mongo.js"
+    echo -e "${GREEN}Created: $AUTH_DIR/init-mongo.js (admin user: $LAB_ADMIN_USER)${NC}"
+else
+    echo -e "${YELLOW}Warning: init-mongo.js.template not found, using existing init-mongo.js${NC}"
+fi
+
+echo ""
+
+# ============================================
+# Step 7: Generate nginx.conf from template
 # ============================================
 echo -e "${YELLOW}Generating nginx.conf...${NC}"
 
@@ -206,7 +224,7 @@ else
 fi
 
 # ============================================
-# Step 7: Generate .env file for React
+# Step 8: Generate .env file for React
 # ============================================
 echo -e "${YELLOW}Generating React .env file...${NC}"
 
@@ -226,7 +244,7 @@ echo -e "${GREEN}Created: $FRONTEND_DIR/.env${NC}"
 echo ""
 
 # ============================================
-# Step 8: Create .env symlink for docker-compose
+# Step 9: Create .env symlink for docker-compose
 # ============================================
 # Docker Compose auto-reads .env from the project directory
 ln -sf clab-config.env "$SCRIPT_DIR/.env"
@@ -241,9 +259,11 @@ export CLAB_SERVERS
 export TOPOLOGY_PATH
 export SSH_USERNAME
 export SSH_PASSWORD
+export LAB_ADMIN_USER
+export LAB_ADMIN_PASSWORD
 
 # ============================================
-# Step 9: Build and start all containers
+# Step 10: Build and start all containers
 # ============================================
 echo -e "${YELLOW}Building and starting all containers...${NC}"
 echo ""
@@ -264,7 +284,7 @@ docker compose up -d
 echo ""
 
 # ============================================
-# Step 10: Wait for services and verify health
+# Step 11: Wait for services and verify health
 # ============================================
 echo -e "${YELLOW}Waiting for services to be ready...${NC}"
 
