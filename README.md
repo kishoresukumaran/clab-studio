@@ -28,6 +28,17 @@ Web-based platform for designing, deploying, and managing containerlab network t
 | 8081 | Mongo Express (DB admin) |
 | 27017 | MongoDB |
 
+The setup script does **not** configure the firewall. Open the required ports manually:
+
+```bash
+# firewalld (RHEL/CentOS/Fedora)
+sudo firewall-cmd --permanent --add-port={80,3000,3001,8080,8081}/tcp
+sudo firewall-cmd --reload
+
+# ufw (Ubuntu/Debian)
+sudo ufw allow 80,3000,3001,8080,8081/tcp
+```
+
 ## Quick Start
 
 ```bash
