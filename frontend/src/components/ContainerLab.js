@@ -554,10 +554,6 @@ const App = ({ user, parentSetMode }) => {
         setNodeNamePrefix('bridge');
         setNodeKind('linux');
         setNodeImage('alpine');
-      } else if (nodeType === 'linux-host') {
-        setNodeNamePrefix('linux');
-        setNodeKind('linux');
-        setNodeImage('alpine');
       } else if (nodeType === 'container') {
         setNodeNamePrefix('container');
         setNodeKind('linux');
