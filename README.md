@@ -59,6 +59,22 @@ sudo ./setup.sh
 
 Access at `http://<your-server-ip>`. Login with the admin credentials you set in `clab-config.env`.
 
+## Container Images
+
+The Topology Designer currently uses Arista cEOS (`arista_ceos:4.35.1F`) as the default node image. You must import this image into Docker on each containerlab server before deploying topologies:
+
+```bash
+# Download the cEOS image from Arista (requires an Arista account)
+# Then import it into Docker:
+docker import cEOS-lab-4.35.1F.tar.xz arista_ceos:4.35.1F
+```
+
+Verify the image is available:
+
+```bash
+docker images | grep arista_ceos
+```
+
 ## Configuration
 
 Edit `clab-config.env` before running setup. The following values **must** be changed (marked `CHANGE_ME` in the template):
