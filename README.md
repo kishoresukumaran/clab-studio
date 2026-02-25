@@ -126,6 +126,7 @@ clab-studio/
 ├── docs/           # Architecture documentation
 ├── docker-compose.yml
 ├── setup.sh
+├── restart.sh
 ├── clab-config.env.example
 └── Makefile
 ```
@@ -133,12 +134,18 @@ clab-studio/
 ## Common Commands
 
 ```bash
-make status         # Check service status
-make logs           # View all logs
-make logs-auth-api  # View logs for a specific service
-make restart        # Restart all services
-make stop           # Stop all services
-make clean          # Remove containers, volumes, and images
+make status                # Check service status
+make logs                  # View all logs
+make logs-auth-api         # View logs for a specific service
+make restart               # Quick restart (no rebuild)
+make full-restart          # Tear down, rebuild, and redeploy everything
+make full-restart-no-cache # Same as above but rebuilds without Docker cache
+make stop                  # Stop all services
+make clean                 # Remove containers, volumes, and images
+
+# Or run the restart script directly:
+sudo ./restart.sh              # Rebuild and redeploy
+sudo ./restart.sh --no-cache   # Force rebuild without Docker cache
 ```
 
 ## Reconfiguration

@@ -1,4 +1,4 @@
-.PHONY: setup build start stop restart logs clean status
+.PHONY: setup build start stop restart full-restart logs clean status
 
 # Full setup (install deps + build + start)
 setup:
@@ -16,8 +16,16 @@ start:
 stop:
 	docker compose down
 
-# Restart all services
+# Restart all services (quick — no rebuild)
 restart: stop start
+
+# Full restart — tear down, rebuild, and redeploy everything
+full-restart:
+	sudo ./restart.sh
+
+# Full restart without Docker cache
+full-restart-no-cache:
+	sudo ./restart.sh --no-cache
 
 # View logs (all services)
 logs:
