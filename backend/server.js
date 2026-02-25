@@ -479,6 +479,207 @@ app.post('/api/containerlab/save', async (req, res) => {
     }
 });
 
+app.post('/api/containerlab/stop', async (req, res) => {
+    try {
+        const { serverIp, topologyName, username } = req.body;
+        console.log('Stop request:', req.body);
+
+        if (!serverIp || !topologyName || !username) {
+            return res.status(400).json({
+                error: 'Server IP, topology name, and username are required'
+            });
+        }
+
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        const ssh = new NodeSSH();
+
+        try {
+            res.write(`Connecting to server as ${username}...\n`);
+            await ssh.connect({
+                ...getSshConfig(username),
+                host: serverIp
+            });
+            res.write('Connected successfully\n');
+        } catch (error) {
+            res.write(`Failed to connect to server: ${error.message}\n`);
+            res.end();
+            return;
+        }
+
+        try {
+            // First, find container IDs for the topology
+            res.write('Finding containers for topology...\n');
+            const listCommand = `docker ps -q --filter "label=containerlab=${topologyName}"`;
+            const listResult = await ssh.execCommand(listCommand, {
+                cwd: '/',
+                onStdout: (chunk) => {
+                    res.write(`stdout: ${chunk.toString()}\n`);
+                },
+                onStderr: (chunk) => {
+                    res.write(`stderr: ${chunk.toString()}\n`);
+                }
+            });
+
+            const containerIds = listResult.stdout.trim();
+            if (!containerIds) {
+                res.write('No running containers found for this topology\n');
+                res.end(JSON.stringify({
+                    success: false,
+                    message: 'Stop operation failed',
+                    error: 'No running containers found for this topology'
+                }));
+                return;
+            }
+
+            // Stop the found containers
+            res.write('Stopping containers...\n');
+            const stopCommand = `docker stop ${containerIds.split('\n').join(' ')}`;
+            const result = await ssh.execCommand(stopCommand, {
+                cwd: '/',
+                onStdout: (chunk) => {
+                    res.write(`stdout: ${chunk.toString()}\n`);
+                },
+                onStderr: (chunk) => {
+                    res.write(`stderr: ${chunk.toString()}\n`);
+                }
+            });
+
+            if (result.code === 0) {
+                res.write('Operation completed successfully\n');
+                res.end(JSON.stringify({
+                    success: true,
+                    message: 'Topology stopped successfully'
+                }));
+            } else {
+                res.write(`Operation failed: ${result.stderr}\n`);
+                res.end(JSON.stringify({
+                    success: false,
+                    message: 'Stop operation failed',
+                    error: result.stderr
+                }));
+            }
+
+        } catch (error) {
+            res.write(`Operation failed: ${error.message}\n`);
+            res.end(JSON.stringify({
+                error: `Stop operation failed: ${error.message}`
+            }));
+        } finally {
+            ssh.dispose();
+        }
+
+    } catch (error) {
+        res.write(`Server error: ${error.message}\n`);
+        res.end(JSON.stringify({
+            error: `Server error: ${error.message}`
+        }));
+    }
+});
+
+app.post('/api/containerlab/redeploy', async (req, res) => {
+    try {
+        const { serverIp, topoFile, username } = req.body;
+        console.log('Redeploy request:', req.body);
+
+        if (!serverIp || !topoFile || !username) {
+            return res.status(400).json({
+                error: 'Server IP, topology file path, and username are required'
+            });
+        }
+
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        const ssh = new NodeSSH();
+
+        try {
+            res.write(`Connecting to server as ${username}...\n`);
+            await ssh.connect({
+                ...getSshConfig(username),
+                host: serverIp
+            });
+            res.write('Connected successfully\n');
+        } catch (error) {
+            res.write(`Failed to connect to server: ${error.message}\n`);
+            res.end();
+            return;
+        }
+
+        try {
+            // Step 1: Destroy the topology
+            res.write('Step 1: Destroying topology...\n');
+            const destroyCommand = `clab destroy --topo ${topoFile}`;
+            const destroyResult = await ssh.execCommand(destroyCommand, {
+                cwd: '/',
+                onStdout: (chunk) => {
+                    res.write(`stdout: ${chunk.toString()}\n`);
+                },
+                onStderr: (chunk) => {
+                    res.write(`stderr: ${chunk.toString()}\n`);
+                }
+            });
+
+            if (destroyResult.code !== 0) {
+                res.write(`Destroy step failed: ${destroyResult.stderr}\n`);
+                res.end(JSON.stringify({
+                    success: false,
+                    message: 'Redeploy failed during destroy step',
+                    error: destroyResult.stderr
+                }));
+                return;
+            }
+
+            res.write('Destroy completed. Proceeding to deploy...\n');
+
+            // Step 2: Deploy the topology
+            res.write('Step 2: Deploying topology...\n');
+            const deployCommand = `clab deploy --topo ${topoFile}`;
+            const deployResult = await ssh.execCommand(deployCommand, {
+                cwd: '/',
+                onStdout: (chunk) => {
+                    res.write(`stdout: ${chunk.toString()}\n`);
+                },
+                onStderr: (chunk) => {
+                    res.write(`stderr: ${chunk.toString()}\n`);
+                }
+            });
+
+            if (deployResult.code === 0) {
+                res.write('Operation completed successfully\n');
+                res.end(JSON.stringify({
+                    success: true,
+                    message: 'Topology redeployed successfully'
+                }));
+            } else {
+                res.write(`Deploy step failed: ${deployResult.stderr}\n`);
+                res.end(JSON.stringify({
+                    success: false,
+                    message: 'Redeploy failed during deploy step',
+                    error: deployResult.stderr
+                }));
+            }
+
+        } catch (error) {
+            res.write(`Operation failed: ${error.message}\n`);
+            res.end(JSON.stringify({
+                error: `Redeploy operation failed: ${error.message}`
+            }));
+        } finally {
+            ssh.dispose();
+        }
+
+    } catch (error) {
+        res.write(`Server error: ${error.message}\n`);
+        res.end(JSON.stringify({
+            error: `Server error: ${error.message}`
+        }));
+    }
+});
+
 app.get('/api/ports/free', async (req, res) => {
     try {
         const { serverIp, username } = req.query;
@@ -1003,7 +1204,7 @@ app.post('/api/system/createUser', async (req, res) => {
 
       // Step 3: Add user to required groups (matching existing user kishore's groups)
       const addGroupsResult = await ssh.execCommand(
-        `echo '${config.sshPassword}' | sudo -S usermod -aG adm,cdrom,sudo,dip,plugdev,users,lpadmin,clab_admins ${username}`
+        `echo '${config.sshPassword}' | sudo -S usermod -aG adm,cdrom,sudo,dip,plugdev,users,lpadmin,clab_admins,docker ${username}`
       );
       if (addGroupsResult.code !== 0) {
         throw new Error(`Failed to add groups: ${addGroupsResult.stderr}`);

@@ -183,7 +183,7 @@ User clicks "Topology" button on a deployed lab in Dashboard
   -> Returns YAML as string in response
   -> Frontend parses YAML client-side (js-yaml)
   -> Converts to Cytoscape.js format (nodes + edges)
-     - Nodes: id, label, kind, mgmt_ip, config, container_name
+     - Nodes: id, label, kind, config, container_name
      - Edges: source, target, source_interface, target_interface
   -> Opens fullscreen TopologyModal
   -> Cytoscape.js renders interactive graph (cose-bilkent layout)
