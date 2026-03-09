@@ -41,3 +41,4 @@ Thumbs.db
 # Claude session files
 claude.md
 claude-session-*.log
+.claude/
