@@ -5,7 +5,7 @@ services:
 
   # MongoDB database
   mongo:
-    image: mongo:latest
+    image: mongo:8.2.3
     container_name: auth-mongo
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
