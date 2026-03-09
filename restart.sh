@@ -62,7 +62,44 @@ echo ""
 cd "$SCRIPT_DIR"
 
 # ============================================
-# Step 2: Stop and remove all containers
+# Step 2: Verify firewall configuration
+# ============================================
+echo -e "${YELLOW}Checking firewall configuration...${NC}"
+
+if command -v ufw &>/dev/null && ufw status | grep -q "Status: active"; then
+    # Define required ports
+    REQUIRED_PORTS=(
+        "22/tcp"       # SSH
+        "80/tcp"       # Frontend
+        "3000/tcp"     # Auth API
+        "3001/tcp"     # Backend API
+        "8080/tcp"     # Containerlab API
+        "8081/tcp"     # Mongo Express
+        "27017/tcp"    # MongoDB
+    )
+
+    PORTS_ADDED=0
+    for PORT in "${REQUIRED_PORTS[@]}"; do
+        if ! ufw status | grep -q "$PORT.*ALLOW"; then
+            echo -e "${YELLOW}Opening port $PORT...${NC}"
+            ufw allow "$PORT" >/dev/null 2>&1
+            PORTS_ADDED=$((PORTS_ADDED + 1))
+        fi
+    done
+
+    if [ $PORTS_ADDED -eq 0 ]; then
+        echo -e "${GREEN}All required ports are open.${NC}"
+    else
+        echo -e "${GREEN}Opened $PORTS_ADDED missing port(s).${NC}"
+    fi
+else
+    echo -e "${YELLOW}UFW not active or not installed. Skipping firewall check.${NC}"
+fi
+
+echo ""
+
+# ============================================
+# Step 3: Stop and remove all containers
 # ============================================
 echo -e "${YELLOW}Stopping and removing all containers...${NC}"
 docker compose down --remove-orphans 2>/dev/null || true
@@ -70,7 +107,7 @@ echo -e "${GREEN}All containers stopped and removed.${NC}"
 echo ""
 
 # ============================================
-# Step 3: Rebuild all images
+# Step 4: Rebuild all images
 # ============================================
 echo -e "${YELLOW}Rebuilding all Docker images${NO_CACHE:+ (no cache)}...${NC}"
 docker compose build $NO_CACHE
@@ -78,7 +115,7 @@ echo -e "${GREEN}All images rebuilt.${NC}"
 echo ""
 
 # ============================================
-# Step 4: Start all services
+# Step 5: Start all services
 # ============================================
 echo -e "${YELLOW}Starting all services...${NC}"
 docker compose up -d
@@ -86,7 +123,7 @@ echo -e "${GREEN}All services started.${NC}"
 echo ""
 
 # ============================================
-# Step 5: Wait for services and verify health
+# Step 6: Wait for services and verify health
 # ============================================
 echo -e "${YELLOW}Waiting for services to be ready...${NC}"
 
@@ -125,7 +162,7 @@ fi
 echo ""
 
 # ============================================
-# Step 6: Show final status
+# Step 7: Show final status
 # ============================================
 echo -e "${YELLOW}Service status:${NC}"
 docker compose ps

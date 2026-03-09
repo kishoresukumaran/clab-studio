@@ -24,6 +24,9 @@ backend/uploads/*
 # Docker volumes
 mongodb_data/
 
+# MongoDB backups
+mongodb-backup*/
+
 # Logs
 *.log
 logs/

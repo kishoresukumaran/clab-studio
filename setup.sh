@@ -323,6 +323,56 @@ fi
 echo ""
 
 # ============================================
+# Step 12: Configure firewall (UFW)
+# ============================================
+echo -e "${YELLOW}Configuring firewall...${NC}"
+
+if command -v ufw &>/dev/null; then
+    # Enable UFW if not already enabled
+    if ! ufw status | grep -q "Status: active"; then
+        echo -e "${YELLOW}Enabling UFW firewall...${NC}"
+        ufw --force enable
+        echo -e "${GREEN}UFW enabled.${NC}"
+    fi
+
+    # Define required ports
+    REQUIRED_PORTS=(
+        "22/tcp"       # SSH
+        "80/tcp"       # Frontend
+        "3000/tcp"     # Auth API
+        "3001/tcp"     # Backend API
+        "8080/tcp"     # Containerlab API
+        "8081/tcp"     # Mongo Express
+        "27017/tcp"    # MongoDB
+    )
+
+    # Add firewall rules for each port
+    for PORT in "${REQUIRED_PORTS[@]}"; do
+        if ! ufw status | grep -q "$PORT"; then
+            echo -e "${YELLOW}Opening port $PORT...${NC}"
+            ufw allow "$PORT" >/dev/null 2>&1
+            echo -e "${GREEN}Port $PORT opened.${NC}"
+        else
+            echo -e "${GREEN}Port $PORT already open.${NC}"
+        fi
+    done
+
+    echo -e "${GREEN}Firewall configured successfully.${NC}"
+else
+    echo -e "${YELLOW}UFW not installed. Skipping firewall configuration.${NC}"
+    echo -e "${YELLOW}Note: If using a different firewall (firewalld, iptables), configure it manually:${NC}"
+    echo "  - Port 22 (SSH)"
+    echo "  - Port 80 (Frontend)"
+    echo "  - Port 3000 (Auth API)"
+    echo "  - Port 3001 (Backend API)"
+    echo "  - Port 8080 (Containerlab API)"
+    echo "  - Port 8081 (Mongo Express)"
+    echo "  - Port 27017 (MongoDB)"
+fi
+
+echo ""
+
+# ============================================
 # Done!
 # ============================================
 echo -e "${BLUE}============================================${NC}"

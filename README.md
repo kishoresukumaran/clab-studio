@@ -17,10 +17,11 @@ Web-based platform for designing, deploying, and managing containerlab network t
 - **OS:** Linux (Ubuntu/Debian) — the setup script uses `apt-get`
 - **Access:** Root or sudo privileges
 - **Tools:** `git` and `curl` must be installed
-- **Ports:** The following ports must be available (not blocked by firewall):
+- **Firewall:** The following ports will be configured by the setup script:
 
 | Port | Service |
 |------|---------|
+| 22 | SSH |
 | 80 | Frontend (Web UI) |
 | 3000 | Auth API |
 | 3001 | Backend API |
@@ -28,15 +29,15 @@ Web-based platform for designing, deploying, and managing containerlab network t
 | 8081 | Mongo Express (DB admin) |
 | 27017 | MongoDB |
 
-The setup script does **not** configure the firewall. Open the required ports manually:
+The setup script **automatically configures UFW firewall** (if installed). If using a different firewall (firewalld, iptables), configure it manually:
 
 ```bash
 # firewalld (RHEL/CentOS/Fedora)
-sudo firewall-cmd --permanent --add-port={80,3000,3001,8080,8081}/tcp
+sudo firewall-cmd --permanent --add-port={22,80,3000,3001,8080,8081,27017}/tcp
 sudo firewall-cmd --reload
 
-# ufw (Ubuntu/Debian)
-sudo ufw allow 80,3000,3001,8080,8081/tcp
+# ufw (Ubuntu/Debian) - automatic via setup.sh, or manually:
+sudo ufw allow 22,80,3000,3001,8080,8081,27017/tcp
 ```
 
 ## Quick Start
